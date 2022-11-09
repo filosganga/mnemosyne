@@ -101,6 +101,9 @@ jobs:
 
     env:
       DYNAMODB_ENDPOINT: "http://localhost:8000"
+      AWS_REGION: eu-west-1
+      AWS_ACCESS_KEY_ID: foo
+      AWS_SECRET_ACCESS_KEY: bar
 
     steps:
       - uses: actions/checkout@v3

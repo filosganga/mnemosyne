@@ -6,10 +6,20 @@ val awsSdkVersion = "2.16.75"
 val log4CatsVersion = "2.1.1"
 val munitVersion = "0.7.26"
 val logBackVersion = "1.2.3"
+val log4j2Version = "2.19.0"
+
+Global / onChangedBuildSource := ReloadOnSourceChanges
 
 ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports" % "0.6.0"
 ThisBuild / semanticdbEnabled := true
 ThisBuild / semanticdbVersion := scalafixSemanticdb.revision
+ThisBuild / excludeDependencies ++= Seq(
+  ExclusionRule("commons-logging", "commons-logging"),
+  ExclusionRule("org.slf4j", "slf4j-log4j12"),
+  ExclusionRule("log4j", "log4j"),
+  ExclusionRule("org.apache.logging.log4j", "log4j-core"),
+  ExclusionRule("org.apache.logging.log4j", "log4j-slf4j-impl")
+)
 
 lazy val deduplication = (project in file("."))
   .enablePlugins(BuildInfoPlugin)
@@ -18,7 +28,7 @@ lazy val deduplication = (project in file("."))
   .settings(
     IntegrationTest / fork := true,
     IntegrationTest / javaOptions ++= Seq(
-      "-Dlogback.configurationFile=logback-it.xml",
+      "-Dlogback.configurationFile=logback-integration-test.xml",
       "-Dsoftware.amazon.awssdk.http.async.service.impl=software.amazon.awssdk.http.nio.netty.NettySdkAsyncHttpService"
     )
   )
@@ -27,7 +37,6 @@ lazy val deduplication = (project in file("."))
     organizationHomepage := Some(url("http://www.kaluza.com")),
     licenses := Seq(("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))),
     scalaVersion := "2.13.10",
-    crossScalaVersions += "2.12.12",
     scalafmtOnCompile := true,
     scalacOptions -= "-Xfatal-warnings", // enable all options from sbt-tpolecat except fatal warnings
     initialCommands := s"import com.kaluza.mnemosyne._",
@@ -76,9 +85,13 @@ lazy val deduplication = (project in file("."))
       "org.typelevel" %% "log4cats-slf4j" % log4CatsVersion,
       "org.slf4j" % "slf4j-api" % slf4jVersion,
       "org.typelevel" %% "cats-effect-laws" % catsEffectVersion % Test,
-      "org.slf4j" % "jcl-over-slf4j" % slf4jVersion % IntegrationTest,
       "org.scalameta" %% "munit" % munitVersion % s"${Test};${IntegrationTest}",
       "org.scalameta" %% "munit-scalacheck" % munitVersion % s"${Test};${IntegrationTest}",
-      "ch.qos.logback" % "logback-classic" % logBackVersion % s"${Test};${IntegrationTest}"
+      "ch.qos.logback" % "logback-classic" % logBackVersion % s"${Test};${IntegrationTest}",
+      "org.slf4j" % "slf4j-api" % slf4jVersion % s"${Test};${IntegrationTest}",
+      "org.slf4j" % "log4j-over-slf4j" % slf4jVersion % s"${Test};${IntegrationTest}",
+      "org.slf4j" % "jcl-over-slf4j" % slf4jVersion % s"${Test};${IntegrationTest}",
+      "org.slf4j" % "jul-to-slf4j" % slf4jVersion % s"${Test};${IntegrationTest}",
+      "org.apache.logging.log4j" % "log4j-to-slf4j" % log4j2Version % s"${Test};${IntegrationTest}"
     )
   )

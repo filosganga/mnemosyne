@@ -26,5 +26,7 @@ metals.sbt
 
 #Mac
 .DS_Store
-
 .vscode/
+
+# misc
+.envrc

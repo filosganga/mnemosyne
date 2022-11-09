@@ -14,6 +14,9 @@ import software.amazon.awssdk.services.dynamodb.model._
 import software.amazon.awssdk.services.dynamodb.{model => _, _}
 
 import com.kaluza.mnemosyne.dynamodb._
+import java.net.URI
+import software.amazon.awssdk.auth.credentials.AwsCredentials
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 
 package object TestUtils {
 
@@ -109,8 +112,21 @@ package object TestUtils {
       .attributeType(attributeType)
       .build()
 
-  def dynamoClientResource[F[_]: Sync]: Resource[F, DynamoDbAsyncClient] =
-    Resource.make(Sync[F].delay(DynamoDbAsyncClient.builder.build()))(c => Sync[F].delay(c.close()))
+  def dynamoClientResource[F[_]: Sync]: Resource[F, DynamoDbAsyncClient] = {
+    Resource.eval(Sync[F].delay(sys.env.get("DYNAMODB_ENDPOINT"))).flatMap { endpoint =>
+
+      Resource.make(Sync[F].delay {
+        val builder = DynamoDbAsyncClient.builder
+
+        endpoint.foreach { endpoint =>
+          builder.endpointOverride(URI.create(endpoint))
+        }
+
+        builder.build()
+      })(c => Sync[F].delay(c.close()))
+    }
+
+  }
 
   def randomTableName[F[_]: Sync]: F[String] =
     Sync[F].delay(s"comms-deduplication-test-${UUID.randomUUID()}")

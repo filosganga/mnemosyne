@@ -12,7 +12,8 @@
         </encoder>
     </appender>
 
-    <root level="debug">
+    <root level="WARN">
         <appender-ref ref="FILE" />
     </root>
+    <logger name="com.kaluza.mnemosyne" level="DEBUG" />
 </configuration>
