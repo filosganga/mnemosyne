@@ -174,4 +174,8 @@ jobs:
           name: ${{ steps.tag-version.outputs.new_version }}
           body: ${{ steps.tag-version.outputs.changelog }}
       - run: git fetch --tags
-      - run: sbt publish
+      - name: publish
+        env:
+          ARTIFACTORY_USER: ${{secrets.ARTIFACTORY_USER}}
+          ARTIFACTORY_PASS: ${{secrets.ARTIFACTORY_PASS}}
+        run: sbt publish
