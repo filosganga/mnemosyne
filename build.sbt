@@ -32,7 +32,7 @@ lazy val deduplication = (project in file("."))
     scalacOptions -= "-Xfatal-warnings", // enable all options from sbt-tpolecat except fatal warnings
     initialCommands := s"import com.kaluza.mnemosyne._",
     javacOptions ++= Seq("-Xlint:unchecked", "-Xlint:deprecation"),
-    addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.13.0" cross CrossVersion.full),
+    addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.13.2" cross CrossVersion.full),
     publishTo := Some("Artifactory Realm" at "https://kaluza.jfrog.io/artifactory/maven-private/"),
     credentials += {
       for {
