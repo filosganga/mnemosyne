@@ -1,4 +1,4 @@
-package com.ovoenergy.comms.deduplication
+package com.kaluza.mnemosyne
 
 import java.util.UUID
 import java.util.concurrent.TimeoutException
@@ -12,7 +12,7 @@ import munit._
 import model._
 import org.scalacheck.Arbitrary
 
-import com.ovoenergy.comms.deduplication.TestUtils._
+import com.kaluza.mnemosyne.TestUtils._
 import cats.effect.kernel.Resource
 import cats.effect.IO
 import cats.effect.kernel.Ref

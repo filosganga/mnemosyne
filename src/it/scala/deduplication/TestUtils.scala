@@ -1,4 +1,4 @@
-package com.ovoenergy.comms.deduplication
+package com.kaluza.mnemosyne
 
 import scala.jdk.CollectionConverters._
 import scala.util.control.NonFatal
@@ -13,12 +13,11 @@ import cats.implicits._
 import software.amazon.awssdk.services.dynamodb.model._
 import software.amazon.awssdk.services.dynamodb.{model => _, _}
 
-import com.ovoenergy.comms.deduplication.dynamodb._
+import com.kaluza.mnemosyne.dynamodb._
 
 package object TestUtils {
 
-  def processRepoResource[F[_]: Async]
-      : Resource[F, ProcessRepo[F, UUID, UUID]] =
+  def processRepoResource[F[_]: Async]: Resource[F, ProcessRepo[F, UUID, UUID]] =
     for {
       dynamoclient <- dynamoClientResource[F]
       tableName <- Resource.eval(randomTableName)
@@ -54,7 +53,8 @@ package object TestUtils {
           dynamoAttribute(DynamoDbProcessRepo.field.processorId, ScalarAttributeType.S)
         )
         .build()
-    Async[F].fromCompletableFuture(Sync[F].delay(client.createTable(createTableRequest)))
+    Async[F]
+      .fromCompletableFuture(Sync[F].delay(client.createTable(createTableRequest)))
       .map(_.tableDescription().tableName())
       .flatTap(waitForTableCreation(client, _))
       .onError {
@@ -64,7 +64,9 @@ package object TestUtils {
 
   def deleteTable[F[_]: Async](client: DynamoDbAsyncClient, tableName: String): F[Unit] = {
     val deleteTableRequest = DeleteTableRequest.builder().tableName(tableName).build()
-    Async[F].fromCompletableFuture(Sync[F].delay(client.deleteTable(deleteTableRequest))).void
+    Async[F]
+      .fromCompletableFuture(Sync[F].delay(client.deleteTable(deleteTableRequest)))
+      .void
       .onError {
         case NonFatal(e) => Concurrent[F].delay(println(s"Error creating DynamoDb table: $e"))
       }

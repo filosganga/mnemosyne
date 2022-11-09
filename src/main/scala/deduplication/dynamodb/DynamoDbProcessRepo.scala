@@ -1,9 +1,9 @@
-package com.ovoenergy.comms.deduplication
+package com.kaluza.mnemosyne
 package dynamodb
 
 import java.time.Instant
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.concurrent.duration.FiniteDuration
 import scala.compat.java8.DurationConverters._
 import scala.compat.java8.FunctionConverters._
@@ -14,7 +14,7 @@ import cats.effect._
 import software.amazon.awssdk.services.dynamodb.model._
 import software.amazon.awssdk.services.dynamodb._
 
-import com.ovoenergy.comms.deduplication.model._
+import com.kaluza.mnemosyne.model._
 
 object DynamoDbProcessRepo {
 

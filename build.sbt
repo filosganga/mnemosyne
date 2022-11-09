@@ -1,7 +1,3 @@
-import sbtrelease.ExtraReleaseCommands
-import sbtrelease.ReleaseStateTransformations._
-import sbtrelease.tagsonly.TagsOnly._
-
 val catsVersion = "2.6.1"
 val catsEffectVersion = "3.1.1"
 val slf4jVersion = "1.7.30"
@@ -11,44 +7,39 @@ val log4CatsVersion = "2.1.1"
 val munitVersion = "0.7.26"
 val logBackVersion = "1.2.3"
 
-lazy val publicArtifactory = "Artifactory Realm" at "https://kaluza.jfrog.io/artifactory/maven"
-
-lazy val publishSettings = Seq(
-  publishTo := Some(publicArtifactory),
-  credentials += {
-    for {
-      usr <- sys.env.get("ARTIFACTORY_USER")
-      password <- sys.env.get("ARTIFACTORY_PASS")
-    } yield Credentials("Artifactory Realm", "kaluza.jfrog.io", usr, password)
-  }.getOrElse(Credentials(Path.userHome / ".ivy2" / ".credentials")),
-  releaseProcess := Seq[ReleaseStep](
-    checkSnapshotDependencies,
-    releaseStepCommand(ExtraReleaseCommands.initialVcsChecksCommand),
-    setVersionFromTags(releaseTagPrefix.value),
-    runClean,
-    tagRelease,
-    publishArtifacts,
-    pushTagsOnly
-  )
-)
+ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports" % "0.6.0"
+ThisBuild / semanticdbEnabled := true
+ThisBuild / semanticdbVersion := scalafixSemanticdb.revision
 
 lazy val deduplication = (project in file("."))
   .enablePlugins(BuildInfoPlugin)
   .configs(IntegrationTest)
   .settings(inConfig(IntegrationTest)(Defaults.testSettings))
-  .settings(publishSettings)
   .settings(
-    organization := "com.ovoenergy.comms",
-    organizationHomepage := Some(url("http://www.ovoenergy.com")),
+    IntegrationTest / fork := true,
+    IntegrationTest / javaOptions ++= Seq(
+      "-Dlogback.configurationFile=logback-it.xml",
+      "-Dsoftware.amazon.awssdk.http.async.service.impl=software.amazon.awssdk.http.nio.netty.NettySdkAsyncHttpService"
+    )
+  )
+  .settings(
+    organization := "com.kaluza.mnemosyne",
+    organizationHomepage := Some(url("http://www.kaluza.com")),
     licenses := Seq(("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))),
-    scalaVersion := "2.13.4",
+    scalaVersion := "2.13.10",
     crossScalaVersions += "2.12.12",
     scalafmtOnCompile := true,
     scalacOptions -= "-Xfatal-warnings", // enable all options from sbt-tpolecat except fatal warnings
-    initialCommands := s"import com.ovoenergy.comms.deduplication._",
+    initialCommands := s"import com.kaluza.mnemosyne._",
     javacOptions ++= Seq("-Xlint:unchecked", "-Xlint:deprecation"),
-    testFrameworks += new TestFramework("munit.Framework"),
     addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.13.0" cross CrossVersion.full),
+    publishTo := Some("Artifactory Realm" at "https://kaluza.jfrog.io/artifactory/maven-private/"),
+    credentials += {
+      for {
+        usr <- sys.env.get("ARTIFACTORY_USER")
+        password <- sys.env.get("ARTIFACTORY_PASS")
+      } yield Credentials("Artifactory Realm", "kaluza.jfrog.io", usr, password)
+    }.getOrElse(Credentials(Path.userHome / ".ivy2" / ".credentials")),
     scmInfo := Some(
       ScmInfo(
         url("https://github.com/ovotech/comms-deduplication"),
@@ -72,8 +63,8 @@ lazy val deduplication = (project in file("."))
     excludeDependencies ++= Seq(
       ExclusionRule("commons-logging", "commons-logging")
     ),
-    name := "deduplication",
-    buildInfoPackage := "com.ovoenergy.comms.deduplication",
+    name := "mnemosyne",
+    buildInfoPackage := "com.kaluza.mnemosyne",
     version ~= (_.replace('+', '-')),
     dynver ~= (_.replace('+', '-')),
     libraryDependencies ++= Seq(
@@ -88,6 +79,6 @@ lazy val deduplication = (project in file("."))
       "org.slf4j" % "jcl-over-slf4j" % slf4jVersion % IntegrationTest,
       "org.scalameta" %% "munit" % munitVersion % s"${Test};${IntegrationTest}",
       "org.scalameta" %% "munit-scalacheck" % munitVersion % s"${Test};${IntegrationTest}",
-      "ch.qos.logback" % "logback-classic" % logBackVersion % s"${Test};${IntegrationTest}",
+      "ch.qos.logback" % "logback-classic" % logBackVersion % s"${Test};${IntegrationTest}"
     )
   )

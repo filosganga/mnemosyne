@@ -1,4 +1,4 @@
-package com.ovoenergy.comms.deduplication
+package com.kaluza.mnemosyne
 
 import java.time.Instant
 
@@ -23,9 +23,9 @@ object Generators {
       id <- arbitrary[Id]
       processorId <- arbitrary[ProcessorId]
       startedAt <- arbitrary[Instant]
-      completedAt <- Gen.option(Gen.choose(500, 5000).map(n => startedAt.plusMillis(n)))
+      completedAt <- Gen.option(Gen.choose(500L, 5000L).map(n => startedAt.plusMillis(n)))
       expiresOn <- Gen.option(
-        Gen.choose(7, 90).map(n => startedAt.plus(n, ChronoUnit.DAYS)).map(Expiration(_))
+        Gen.choose(7L, 90L).map(n => startedAt.plus(n, ChronoUnit.DAYS)).map(Expiration(_))
       )
     } yield Process[Id, ProcessorId](
       id = id,

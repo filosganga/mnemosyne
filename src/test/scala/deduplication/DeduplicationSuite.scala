@@ -1,4 +1,4 @@
-package com.ovoenergy.comms.deduplication
+package com.kaluza.mnemosyne
 
 import java.time.Instant
 import java.{util => ju}

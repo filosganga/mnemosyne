@@ -1,4 +1,4 @@
-package com.ovoenergy.comms.deduplication
+package com.kaluza.mnemosyne
 
 import java.util.UUID
 import java.time.Instant
@@ -14,9 +14,9 @@ import software.amazon.awssdk.services.dynamodb.{model => _, _}
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 import software.amazon.awssdk.services.dynamodb.model.GetItemRequest
 
-import com.ovoenergy.comms.deduplication.TestUtils._
-import com.ovoenergy.comms.deduplication.dynamodb.DynamoDbConfig
-import com.ovoenergy.comms.deduplication.dynamodb.DynamoDbProcessRepo
+import com.kaluza.mnemosyne.TestUtils._
+import com.kaluza.mnemosyne.dynamodb.DynamoDbConfig
+import com.kaluza.mnemosyne.dynamodb.DynamoDbProcessRepo
 import cats.effect.unsafe.IORuntime
 
 class DynamoDbProcessRepoSuite extends FunSuite {
@@ -120,9 +120,11 @@ class DynamoDbProcessRepoSuite extends FunSuite {
         val testeeCompletedAt = Option(item.m)
           .flatMap { m =>
             Option(m.get(DynamoDbProcessRepo.field.completedAt))
-          }.flatMap { id =>
+          }
+          .flatMap { id =>
             Option(id.n())
-          }.map { n =>
+          }
+          .map { n =>
             Instant.ofEpochMilli(n.toLong)
           }
 
@@ -180,9 +182,12 @@ class DynamoDbProcessRepoSuite extends FunSuite {
         .consistentRead(true)
         .build()
 
-      val response = IO.fromCompletableFuture(IO.delay(
-        dynamoclient
-          .getItem(request)))
+      val response = IO.fromCompletableFuture(
+        IO.delay(
+          dynamoclient
+            .getItem(request)
+        )
+      )
 
       response.map { r =>
         if (r.hasItem()) {

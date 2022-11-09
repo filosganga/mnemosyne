@@ -1,10 +1,10 @@
-package com.ovoenergy.comms.deduplication
+package com.kaluza.mnemosyne
 package dynamodb
 
 import java.{util => ju}
 import java.time.Instant
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 import cats._
 import cats.implicits._

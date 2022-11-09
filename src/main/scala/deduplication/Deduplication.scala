@@ -1,4 +1,4 @@
-package com.ovoenergy.comms.deduplication
+package com.kaluza.mnemosyne
 
 import java.time.Instant
 import java.util.concurrent.TimeoutException
@@ -9,7 +9,7 @@ import scala.compat.java8.DurationConverters._
 import cats._
 import cats.implicits._
 
-import com.ovoenergy.comms.deduplication.model._
+import com.kaluza.mnemosyne.model._
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 import cats.effect.Temporal
 import cats.effect.kernel.Clock

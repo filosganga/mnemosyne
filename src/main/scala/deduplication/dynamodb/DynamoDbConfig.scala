@@ -1,4 +1,4 @@
-package com.ovoenergy.comms.deduplication
+package com.kaluza.mnemosyne
 package dynamodb
 
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClientBuilder
