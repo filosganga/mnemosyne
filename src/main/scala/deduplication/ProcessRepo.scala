@@ -1,9 +1,9 @@
 package com.kaluza.mnemosyne
 
 import java.time.Instant
+import scala.concurrent.duration.FiniteDuration
 
 import model._
-import scala.concurrent.duration.FiniteDuration
 
 trait ProcessRepo[F[_], ID, ProcessorID] {
 

@@ -1,11 +1,12 @@
 package com.kaluza.mnemosyne
 
 import java.time.Instant
-import java.{util => ju}
 import java.util.UUID
-
+import java.{util => ju}
 import scala.concurrent.duration._
 
+import cats.effect.IO
+import cats.effect.unsafe.IORuntime
 import cats.implicits._
 
 import munit._
@@ -13,8 +14,6 @@ import org.scalacheck.Arbitrary
 
 import model._
 import Config._
-import cats.effect.unsafe.IORuntime
-import cats.effect.IO
 
 class DeduplicationSuite extends FunSuite {
 
@@ -26,7 +25,7 @@ class DeduplicationSuite extends FunSuite {
     })
   )
 
-  def given[A: Arbitrary]: A = Arbitrary.arbitrary[A].sample.get
+  def a[A: Arbitrary]: A = Arbitrary.arbitrary[A].sample.get
 
   class MockProcessRepo extends ProcessRepo[IO, UUID, UUID] {
     def startProcessingUpdate(
@@ -45,11 +44,11 @@ class DeduplicationSuite extends FunSuite {
   }
 
   test(
-    "tryStartProcess should return New when the process with the given ID has never started before"
+    "tryStartProcess should return New when the process with the a ID has never started before"
   ) {
 
-    val processId = given[UUID]
-    val processorId = given[UUID]
+    val processId = a[UUID]
+    val processorId = a[UUID]
 
     val deduplication = Deduplication[IO, UUID, UUID](
       new MockProcessRepo {
@@ -78,11 +77,11 @@ class DeduplicationSuite extends FunSuite {
   }
 
   test(
-    "tryStartProcess should return Duplicate when the process with the given ID has already completed"
+    "tryStartProcess should return Duplicate when the process with the a ID has already completed"
   ) {
 
-    val processId = given[UUID]
-    val processorId = given[UUID]
+    val processId = a[UUID]
+    val processorId = a[UUID]
 
     val deduplication = Deduplication[IO, UUID, UUID](
       new MockProcessRepo {
@@ -123,8 +122,8 @@ class DeduplicationSuite extends FunSuite {
     "tryStartProcess should return New when another process with the same Id has never completed and expired"
   ) {
 
-    val processId = given[UUID]
-    val processorId = given[UUID]
+    val processId = a[UUID]
+    val processorId = a[UUID]
 
     val deduplication = Deduplication[IO, UUID, UUID](
       new MockProcessRepo {
@@ -165,8 +164,8 @@ class DeduplicationSuite extends FunSuite {
     "tryStartProcess should return New when another process with the same Id has completed and expired"
   ) {
 
-    val processId = given[UUID]
-    val processorId = given[UUID]
+    val processId = a[UUID]
+    val processorId = a[UUID]
 
     val deduplication = Deduplication[IO, UUID, UUID](
       new MockProcessRepo {
@@ -207,8 +206,8 @@ class DeduplicationSuite extends FunSuite {
     "tryStartProcess should return New when another process with the same Id has timeout"
   ) {
 
-    val processId = given[UUID]
-    val processorId = given[UUID]
+    val processId = a[UUID]
+    val processorId = a[UUID]
 
     val deduplication = Deduplication[IO, UUID, UUID](
       new MockProcessRepo {

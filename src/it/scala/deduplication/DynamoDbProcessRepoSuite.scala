@@ -29,7 +29,7 @@ class DynamoDbProcessRepoSuite extends FunSuite {
     })
   )
 
-  def given[A: Arbitrary]: IO[A] =
+  def a[A: Arbitrary]: IO[A] =
     IO.fromOption(Arbitrary.arbitrary[A].sample)(
       new RuntimeException("Unable to generate a sample")
     )
@@ -39,8 +39,8 @@ class DynamoDbProcessRepoSuite extends FunSuite {
     resources.use { resources =>
 
       for {
-        id <- given[UUID]
-        processorId <- given[UUID]
+        id <- a[UUID]
+        processorId <- a[UUID]
         now <- Clock[IO].realTimeInstant
         _ <- resources.processRepoR.startProcessingUpdate(
           id = id,
@@ -57,8 +57,8 @@ class DynamoDbProcessRepoSuite extends FunSuite {
     resources.use { resources =>
 
       for {
-        id <- given[UUID]
-        processorId <- given[UUID]
+        id <- a[UUID]
+        processorId <- a[UUID]
         now <- Clock[IO].realTimeInstant
         _ <- resources.processRepoR.startProcessingUpdate(
           id = id,
@@ -104,8 +104,8 @@ class DynamoDbProcessRepoSuite extends FunSuite {
     resources.use { resources =>
 
       for {
-        id <- given[UUID]
-        processorId <- given[UUID]
+        id <- a[UUID]
+        processorId <- a[UUID]
         now <- Clock[IO].realTimeInstant
         _ <- resources.processRepoR.completeProcess(
           id = id,
@@ -144,8 +144,8 @@ class DynamoDbProcessRepoSuite extends FunSuite {
 
     resources.use { resources =>
       for {
-        id <- given[UUID]
-        processorId <- given[UUID]
+        id <- a[UUID]
+        processorId <- a[UUID]
         now <- Clock[IO].realTimeInstant
         _ <- resources.processRepoR.startProcessingUpdate(
           id = id,

@@ -1,8 +1,8 @@
 package com.kaluza.mnemosyne
 package dynamodb
 
-import java.{util => ju}
 import java.time.Instant
+import java.{util => ju}
 
 import cats._
 import cats.implicits._

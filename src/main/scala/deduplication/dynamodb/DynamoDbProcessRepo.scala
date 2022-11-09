@@ -2,17 +2,16 @@ package com.kaluza.mnemosyne
 package dynamodb
 
 import java.time.Instant
-
-import scala.jdk.CollectionConverters._
-import scala.concurrent.duration.FiniteDuration
 import scala.compat.java8.DurationConverters._
 import scala.compat.java8.FunctionConverters._
+import scala.concurrent.duration.FiniteDuration
+import scala.jdk.CollectionConverters._
 
-import cats.implicits._
 import cats.effect._
+import cats.implicits._
 
-import software.amazon.awssdk.services.dynamodb.model._
 import software.amazon.awssdk.services.dynamodb._
+import software.amazon.awssdk.services.dynamodb.model._
 
 import com.kaluza.mnemosyne.model._
 

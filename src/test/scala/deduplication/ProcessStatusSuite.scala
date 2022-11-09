@@ -1,8 +1,7 @@
 package com.kaluza.mnemosyne
 
-import java.{util => ju}
 import java.time.Instant
-
+import java.{util => ju}
 import scala.concurrent.duration._
 
 import cats.implicits._

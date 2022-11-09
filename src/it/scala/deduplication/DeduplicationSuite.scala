@@ -29,12 +29,12 @@ class DeduplicationSuite extends FunSuite {
     })
   )
 
-  def given[A: Arbitrary]: A = Arbitrary.arbitrary[A].sample.get
+  def a[A: Arbitrary]: A = Arbitrary.arbitrary[A].sample.get
 
   test("Deduplication should always process event for the first time") {
-    val processorId = given[UUID]
-    val id1 = given[UUID]
-    val id2 = given[UUID]
+    val processorId = a[UUID]
+    val id1 = a[UUID]
+    val id2 = a[UUID]
 
     deduplicationResource(processorId)
       .use { ps =>
@@ -50,8 +50,8 @@ class DeduplicationSuite extends FunSuite {
 
   test("Deduplication should process event for the first time, ignore after that") {
 
-    val processorId = given[UUID]
-    val id = given[UUID]
+    val processorId = a[UUID]
+    val id = a[UUID]
 
     deduplicationResource(processorId)
       .use { ps =>
@@ -67,8 +67,8 @@ class DeduplicationSuite extends FunSuite {
 
   test("Deduplication should re-process the event if it failed the first time") {
 
-    val processorId = given[UUID]
-    val id = given[UUID]
+    val processorId = a[UUID]
+    val id = a[UUID]
 
     deduplicationResource(processorId, 1.seconds)
       .use { ps =>
@@ -89,8 +89,8 @@ class DeduplicationSuite extends FunSuite {
   // TODO this test is ignored because it is the symptoms of the issue we have with this library
   test("Deduplication should not re-process multiple event if it failed the first time".ignore) {
 
-    val processorId = given[UUID]
-    val id = given[UUID]
+    val processorId = a[UUID]
+    val id = a[UUID]
 
     deduplicationResource(processorId, 1.seconds)
       .use { ps =>
@@ -113,8 +113,8 @@ class DeduplicationSuite extends FunSuite {
 
   test("Deduplication should process the second event after the first one timeout") {
 
-    val processorId = given[UUID]
-    val id = given[UUID]
+    val processorId = a[UUID]
+    val id = a[UUID]
 
     val maxProcessingTime = 1.seconds
     deduplicationResource(processorId, maxProcessingTime)
@@ -131,8 +131,8 @@ class DeduplicationSuite extends FunSuite {
 
   test("Deduplication should fail with timeout if maxPoll < maxProcessingTime") {
 
-    val processorId = given[UUID]
-    val id = given[UUID]
+    val processorId = a[UUID]
+    val id = a[UUID]
 
     val maxProcessingTime = 10.seconds
     val maxPollingtime = 1.second
@@ -152,8 +152,8 @@ class DeduplicationSuite extends FunSuite {
 
   test("Deduplication should process only one event out of multiple concurrent events") {
 
-    val processorId = given[UUID]
-    val id = given[UUID]
+    val processorId = a[UUID]
+    val id = a[UUID]
 
     val n = 120
 

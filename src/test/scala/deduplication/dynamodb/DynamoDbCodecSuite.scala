@@ -1,8 +1,8 @@
 package com.kaluza.mnemosyne
 package dynamodb
 
-import java.{util => ju}
 import java.time.Instant
+import java.{util => ju}
 import scala.reflect.ClassTag
 
 import software.amazon.awssdk.services.dynamodb.model._

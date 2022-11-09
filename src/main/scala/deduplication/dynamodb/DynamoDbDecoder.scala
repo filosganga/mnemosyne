@@ -1,17 +1,15 @@
 package com.kaluza.mnemosyne
 package dynamodb
 
-import java.{util => ju}
 import java.time.Instant
-
+import java.{util => ju}
+import scala.annotation.tailrec
 import scala.jdk.CollectionConverters._
 
 import cats._
 import cats.implicits._
 
 import software.amazon.awssdk.services.dynamodb.model._
-
-import scala.annotation.tailrec
 
 case class DecoderFailure(message: String, cause: Option[Throwable] = None)
     extends RuntimeException(message, cause.getOrElse(null))

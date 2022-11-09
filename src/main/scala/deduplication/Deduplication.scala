@@ -2,19 +2,17 @@ package com.kaluza.mnemosyne
 
 import java.time.Instant
 import java.util.concurrent.TimeoutException
-
-import scala.concurrent.duration._
 import scala.compat.java8.DurationConverters._
+import scala.concurrent.duration._
 
 import cats._
+import cats.effect.Temporal
+import cats.effect.kernel.{Async, Clock, Sync}
 import cats.implicits._
 
-import com.kaluza.mnemosyne.model._
 import org.typelevel.log4cats.slf4j.Slf4jLogger
-import cats.effect.Temporal
-import cats.effect.kernel.Clock
-import cats.effect.kernel.Sync
-import cats.effect.kernel.Async
+
+import com.kaluza.mnemosyne.model._
 
 trait Deduplication[F[_], ID, ProcessorID] {
 
