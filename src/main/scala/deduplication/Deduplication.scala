@@ -105,7 +105,7 @@ object Deduplication {
     }
   }
 
-  def apply[F[_]: Async: Clock, ID, ProcessorID](
+  def apply[F[_]: Async, ID, ProcessorID](
       repo: ProcessRepo[F, ID, ProcessorID],
       config: Config[ProcessorID]
   ): F[Deduplication[F, ID, ProcessorID]] = Slf4jLogger.create[F].map { logger =>

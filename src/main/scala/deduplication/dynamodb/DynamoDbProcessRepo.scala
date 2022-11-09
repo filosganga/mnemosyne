@@ -3,7 +3,6 @@ package dynamodb
 
 import java.time.Instant
 import scala.compat.java8.DurationConverters._
-import scala.compat.java8.FunctionConverters._
 import scala.concurrent.duration.FiniteDuration
 import scala.jdk.CollectionConverters._
 
