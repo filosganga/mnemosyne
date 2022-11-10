@@ -4,7 +4,7 @@ import _root_.meteor._
 import _root_.meteor.codec.Encoder
 import _root_.meteor.syntax._
 import cats.effect._
-import cats.implicits._
+import cats.syntax.all._
 import com.kaluza.mnemosyne.meteor._
 import java.util.UUID
 import scala.concurrent.duration._
@@ -13,6 +13,10 @@ import software.amazon.awssdk.services.dynamodb.model.BillingMode
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 import java.time.Instant
 import com.kaluza.mnemosyne.meteor.model.EncodedResult
+import cats.data.OptionT
+import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProviderChain
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
 
 object DeduplicationTestUtils {
 
@@ -73,11 +77,32 @@ object DeduplicationTestUtils {
 
   val uuidF = IO(UUID.randomUUID())
 
+  val clientR = Resource
+    .eval {
+      IO(sys.env.get("DYNAMODB_ENDPOINT")).flatMap { endpoint =>
+        endpoint.traverse { endpoint =>
+          IO(java.net.URI.create(endpoint))
+        }
+      }
+    }
+    .flatMap { endpoint =>
+      endpoint.fold(
+        Client.resource[IO]
+      ) { endpoint =>
+        Client.resource[IO](
+          cred = DefaultCredentialsProvider.builder().build(),
+          endpoint = endpoint,
+          region = DefaultAwsRegionProviderChain.builder().build().getRegion()
+        )
+      }
+
+    }
+
   val testRepo: Resource[IO, ProcessRepo[IO, String, String, EncodedResult]] =
     for {
       uuid <- Resource.eval(uuidF)
       tableName = s"comms-deduplication-test-${uuid}"
-      client <- Client.resource[IO]
+      client <- clientR
       table <- Resource.make[IO, CompositeKeysTable[String, String]](
         IO(println(s"Creating table ${tableName}")) >> createTestTable(client, tableName)
       )(_ => deleteTable(client, tableName))
