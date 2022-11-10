@@ -1,11 +1,12 @@
-val catsVersion = "2.6.1"
-val catsEffectVersion = "3.1.1"
-val slf4jVersion = "1.7.30"
+val catsVersion = "2.8.0"
+val catsEffectVersion = "2.5.5"
+val slf4jVersion = "1.7.36"
 val scalaJava8CompatVersion = "0.9.1"
-val awsSdkVersion = "2.16.75"
-val log4CatsVersion = "2.1.1"
-val munitVersion = "0.7.26"
-val logBackVersion = "1.2.3"
+val awsSdkVersion = "2.18.13"
+val meteorVersion = "0.22.13"
+val log4CatsVersion = "1.1.1"
+val munitVersion = "0.7.29"
+val logBackVersion = "1.4.4"
 val log4j2Version = "2.19.0"
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
@@ -69,9 +70,6 @@ lazy val deduplication = (project in file("."))
         url("https://github.com/SystemFw")
       )
     ),
-    excludeDependencies ++= Seq(
-      ExclusionRule("commons-logging", "commons-logging")
-    ),
     name := "mnemosyne",
     buildInfoPackage := "com.kaluza.mnemosyne",
     version ~= (_.replace('+', '-')),
@@ -79,10 +77,10 @@ lazy val deduplication = (project in file("."))
     libraryDependencies ++= Seq(
       "org.typelevel" %% "cats-core" % catsVersion,
       "org.typelevel" %% "cats-effect" % catsEffectVersion,
-      "org.scala-lang.modules" %% "scala-java8-compat" % scalaJava8CompatVersion,
       "software.amazon.awssdk" % "dynamodb" % awsSdkVersion,
-      "org.typelevel" %% "log4cats-core" % log4CatsVersion,
-      "org.typelevel" %% "log4cats-slf4j" % log4CatsVersion,
+      "io.github.d2a4u" %% "meteor-awssdk" % meteorVersion,
+      "io.chrisdavenport" %% "log4cats-core" % log4CatsVersion,
+      "io.chrisdavenport" %% "log4cats-slf4j" % log4CatsVersion,
       "org.slf4j" % "slf4j-api" % slf4jVersion,
       "org.typelevel" %% "cats-effect-laws" % catsEffectVersion % Test,
       "org.scalameta" %% "munit" % munitVersion % s"${Test};${IntegrationTest}",
