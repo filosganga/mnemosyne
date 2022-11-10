@@ -1,20 +1,20 @@
 package com.kaluza.mnemosyne
 package meteor
 
+import java.time.Instant
+import scala.concurrent.duration.FiniteDuration
+
 import cats.effect._
 import cats.implicits._
+
+import _root_.meteor._
+import _root_.meteor.codec.Codec
+import _root_.meteor.syntax._
+import software.amazon.awssdk.services.dynamodb.model.ReturnValue
+
 import com.kaluza.mnemosyne.meteor.codecs._
 import com.kaluza.mnemosyne.meteor.model._
 import com.kaluza.mnemosyne.model._
-import java.time.Instant
-import _root_.meteor.Client
-import _root_.meteor.CompositeKeysTable
-import _root_.meteor.Expression
-import _root_.meteor.codec.Codec
-import _root_.meteor.errors
-import _root_.meteor.syntax._
-import scala.concurrent.duration.FiniteDuration
-import software.amazon.awssdk.services.dynamodb.model.ReturnValue
 
 object MeteorProcessRepo {
 

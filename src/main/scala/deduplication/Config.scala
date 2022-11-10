@@ -1,7 +1,6 @@
 package com.kaluza.mnemosyne
 
 import java.util.concurrent.TimeUnit
-
 import scala.concurrent.duration._
 
 import Config._

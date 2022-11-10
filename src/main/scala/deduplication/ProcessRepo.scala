@@ -1,8 +1,9 @@
 package com.kaluza.mnemosyne
 
-import com.kaluza.mnemosyne.model._
 import java.time.Instant
 import scala.concurrent.duration.FiniteDuration
+
+import com.kaluza.mnemosyne.model._
 
 object ProcessRepo {
   sealed trait AttemptResult

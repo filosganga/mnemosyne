@@ -1,12 +1,15 @@
 package com.kaluza.mnemosyne
 
-import cats.implicits._
-import com.kaluza.mnemosyne.Generators._
-import com.kaluza.mnemosyne.model._
 import java.time.Instant
 import java.{util => ju}
-import org.scalacheck.Prop._
 import scala.concurrent.duration._
+
+import cats.implicits._
+
+import org.scalacheck.Prop._
+
+import com.kaluza.mnemosyne.Generators._
+import com.kaluza.mnemosyne.model._
 
 class ProcessStatusSuite extends munit.ScalaCheckSuite {
 

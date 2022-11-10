@@ -1,10 +1,11 @@
 package com.kaluza.mnemosyne
 package meteor
 
-import _root_.meteor.codec.Codec
-import _root_.meteor.CompositeKeysTable
-import _root_.meteor.Client
 import cats.effect._
+
+import _root_.meteor.codec.Codec
+import _root_.meteor.{Client, CompositeKeysTable}
+
 import com.kaluza.mnemosyne.meteor.model._
 
 object MeteorDeduplication {

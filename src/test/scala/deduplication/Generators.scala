@@ -1,10 +1,12 @@
 package com.kaluza.mnemosyne
 
-import com.kaluza.mnemosyne.model._
 import java.time.Instant
 import java.time.temporal.ChronoUnit
+
 import org.scalacheck.Arbitrary._
 import org.scalacheck._
+
+import com.kaluza.mnemosyne.model._
 
 object Generators {
 

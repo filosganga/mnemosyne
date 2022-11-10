@@ -1,15 +1,18 @@
 package com.kaluza.mnemosyne
 package meteor
 
+import java.time.Instant
+
+import cats.implicits._
+
 import _root_.meteor.codec.Codec
 import _root_.meteor.errors._
 import _root_.meteor.syntax._
-import cats.implicits._
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue
+
 import com.kaluza.mnemosyne.ResultCodec
 import com.kaluza.mnemosyne.meteor.model._
 import com.kaluza.mnemosyne.model._
-import java.time.Instant
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 
 package object codecs {
 

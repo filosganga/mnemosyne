@@ -1,15 +1,17 @@
 package com.kaluza.mnemosyne
 
+import java.time.Instant
+import java.util.concurrent.{TimeUnit, TimeoutException}
+import scala.compat.java8.DurationConverters._
+import scala.concurrent.duration._
+
 import cats._
 import cats.effect._
 import cats.implicits._
-import com.kaluza.mnemosyne.model._
+
 import io.chrisdavenport.log4cats.Logger
-import java.time.Instant
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.TimeoutException
-import scala.compat.java8.DurationConverters._
-import scala.concurrent.duration._
+
+import com.kaluza.mnemosyne.model._
 
 trait DeduplicationContext[F[_], ID, ContextID, A] {
 

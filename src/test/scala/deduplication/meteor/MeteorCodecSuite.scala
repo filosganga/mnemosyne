@@ -1,17 +1,20 @@
 package com.kaluza.mnemosyne
 package meteor
 
+import java.time.Instant
+import java.{util => ju}
+import scala.reflect.ClassTag
+
 import _root_.meteor.codec.Codec
 import _root_.meteor.syntax._
+
+import org.scalacheck.Arbitrary
+import org.scalacheck.Prop._
+
 import com.kaluza.mnemosyne.Generators._
 import com.kaluza.mnemosyne.meteor.codecs._
 import com.kaluza.mnemosyne.meteor.model.EncodedResult
 import com.kaluza.mnemosyne.model._
-import java.time.Instant
-import java.{util => ju}
-import org.scalacheck.Arbitrary
-import org.scalacheck.Prop._
-import scala.reflect.ClassTag
 
 class MeteorCodecSuite extends munit.ScalaCheckSuite {
 

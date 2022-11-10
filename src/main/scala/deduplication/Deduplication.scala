@@ -2,6 +2,7 @@ package com.kaluza.mnemosyne
 
 import cats.effect._
 import cats.implicits._
+
 import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
 
 trait Deduplication[F[_], ID, ContextID, Encoded] {
