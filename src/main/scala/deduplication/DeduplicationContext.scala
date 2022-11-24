@@ -75,7 +75,7 @@ trait DeduplicationContext[F[_], ID, ContextID, A] {
 
 object DeduplicationContext {
 
-  def apply[F[_]: Async, ID, ContextID, Encoded, A](
+  def apply[F[_]: Temporal, ID, ContextID, Encoded, A](
       id: ContextID,
       processRepo: ProcessRepo[F, ID, ContextID, Encoded],
       config: Config,
@@ -152,18 +152,19 @@ object DeduplicationContext {
         val stopRetry: F[A] =
           logger.warn(
             s"Process still running, stop retry-ing ${logContext}"
-          ) >> Sync[F]
+          ) >> MonadThrow[F]
             .raiseError[A](new TimeoutException(s"Stop polling after ${attemptNumber} polls"))
 
         for {
           now <- nowF[F]
           totalDuration = (now.toEpochMilli - pollingStartedAt.toEpochMilli).milliseconds
-          _ <- if (totalDuration >= config.pollStrategy.maxPollDuration) stopRetry else Sync[F].unit
+          _ <- if (totalDuration >= config.pollStrategy.maxPollDuration) stopRetry
+          else Applicative[F].unit
           status = processStatus[Encoded](config.maxProcessingTime, now)(existingProcess)
           result <- status match {
             case ProcessStatus.NotStarted() => runProcess(id, fa)
             case ProcessStatus.Completed(result) =>
-              Sync[F]
+              MonadThrow[F]
                 .fromEither(codec.read(result))
                 .flatTap(onDuplicateDetected)
                 .map(Duplicate(_))
@@ -178,7 +179,7 @@ object DeduplicationContext {
         for {
           result <- fa
           now <- nowF[F]
-          encodedResult <- Sync[F].fromEither(codec.write(result))
+          encodedResult <- MonadThrow[F].fromEither(codec.write(result))
           _ <- processRepo.markAsCompleted(id, contextId, encodedResult, now, config.ttl)
         } yield New(result)
     }
