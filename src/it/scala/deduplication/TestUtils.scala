@@ -1,28 +1,18 @@
 package com.kaluza.mnemosyne
 
 import _root_.meteor._
-import _root_.meteor.codec.Encoder
-import _root_.meteor.syntax._
 import cats.effect._
 import cats.syntax.all._
 import com.kaluza.mnemosyne.meteor._
 import java.util.UUID
 import scala.concurrent.duration._
-import scala.concurrent.ExecutionContext
 import software.amazon.awssdk.services.dynamodb.model.BillingMode
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 import java.time.Instant
 import com.kaluza.mnemosyne.meteor.model.EncodedResult
-import cats.data.OptionT
 import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain
-import software.amazon.awssdk.auth.credentials.AwsCredentialsProviderChain
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
 
 object DeduplicationTestUtils {
-
-  implicit val ec = ExecutionContext.global
-  implicit val contextShift = IO.contextShift(ec)
-  implicit val timer: Timer[IO] = IO.timer(ec)
 
   trait TestProcess[A] {
     def startedAt: Option[Instant]
@@ -43,13 +33,13 @@ object DeduplicationTestUtils {
           def completed = completedAt.isDefined
           def run =
             for {
-              started <- IO.timer(ec).clock.realTime(MILLISECONDS)
+              started <- IO.realTime.map(_.toMillis)
               _ <- IO.delay { startedAt = Instant.ofEpochMilli(started).some }
               _ <- IO.sleep(delay)
               res <- result match {
                 case Some(res) =>
                   for {
-                    completed <- IO.timer(ec).clock.realTime(MILLISECONDS)
+                    completed <- IO.realTime.map(_.toMillis)
                     _ <- IO.delay { completedAt = Instant.ofEpochMilli(completed).some }
                   } yield res
                 case None => IO.raiseError[A](NoValue)

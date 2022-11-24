@@ -1,15 +1,15 @@
 package com.kaluza.mnemosyne
 
 import java.time.Instant
-import java.util.concurrent.{TimeUnit, TimeoutException}
+import java.util.concurrent.TimeoutException
 import scala.compat.java8.DurationConverters._
 import scala.concurrent.duration._
 
 import cats._
-import cats.effect._
+import cats.effect.{Temporal, _}
 import cats.implicits._
 
-import io.chrisdavenport.log4cats.Logger
+import org.typelevel.log4cats.Logger
 
 import com.kaluza.mnemosyne.model._
 
@@ -75,7 +75,7 @@ trait DeduplicationContext[F[_], ID, ContextID, A] {
 
 object DeduplicationContext {
 
-  def apply[F[_]: Sync: Timer, ID, ContextID, Encoded, A](
+  def apply[F[_]: Async, ID, ContextID, Encoded, A](
       id: ContextID,
       processRepo: ProcessRepo[F, ID, ContextID, Encoded],
       config: Config,
@@ -124,7 +124,7 @@ object DeduplicationContext {
 
         def waitAndRetry: F[Result[A]] =
           for {
-            _ <- Timer[F].sleep(pollDelay)
+            _ <- Temporal[F].sleep(pollDelay)
             updatedProcess <- processRepo.get(id, contextId)
             nextDelay = config.pollStrategy.nextDelay(attemptNumber, pollDelay)
             result <- handleScenarios(
@@ -184,9 +184,8 @@ object DeduplicationContext {
     }
 
   def nowF[F[_]: Functor: Clock] =
-    Clock[F]
-      .realTime(TimeUnit.MILLISECONDS)
-      .map(Instant.ofEpochMilli)
+    Clock[F].realTime
+      .map(time => Instant.ofEpochMilli(time.toMillis))
 
   def processStatus[A](
       maxProcessingTime: FiniteDuration,

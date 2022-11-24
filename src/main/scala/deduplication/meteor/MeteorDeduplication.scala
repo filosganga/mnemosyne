@@ -10,7 +10,7 @@ import com.kaluza.mnemosyne.meteor.model._
 
 object MeteorDeduplication {
 
-  def apply[F[_]: Sync: Timer, ID: Codec, ContextID: Codec](
+  def apply[F[_]: Async, ID: Codec, ContextID: Codec](
       client: Client[F],
       table: CompositeKeysTable[ID, ContextID],
       config: Config
@@ -20,7 +20,7 @@ object MeteorDeduplication {
       config
     )
 
-  def resource[F[_]: Sync: Timer, ID: Codec, ContextID: Codec](
+  def resource[F[_]: Async, ID: Codec, ContextID: Codec](
       client: Client[F],
       table: CompositeKeysTable[ID, ContextID],
       config: Config

@@ -2,21 +2,13 @@ package com.kaluza.mnemosyne
 
 import cats.effect._
 import cats.implicits._
-import cats.instances._
 import com.kaluza.mnemosyne.DeduplicationTestUtils._
 import com.kaluza.mnemosyne.meteor.codecs._
 import java.util.concurrent.TimeoutException
-import munit._
+import munit.CatsEffectSuite
 import scala.concurrent.duration._
-import cats.effect.concurrent.Ref
 
-class DeduplicationSuite extends FunSuite {
-
-  override def munitValueTransforms = super.munitValueTransforms ++ List(
-    new ValueTransform("IO", {
-      case io: IO[_] => io.unsafeToFuture()
-    })
-  )
+class DeduplicationSuite extends CatsEffectSuite {
 
   test("should run an `F[A]` and return the result") {
     testDeduplication().map(_.context[String]("test")).use { dedup =>

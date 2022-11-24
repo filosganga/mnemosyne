@@ -5,18 +5,11 @@ import cats.implicits._
 import com.kaluza.mnemosyne.DeduplicationTestUtils._
 import com.kaluza.mnemosyne.meteor.model.EncodedResult
 import java.time.Instant
-import java.util.concurrent.TimeUnit
 import meteor.syntax._
 import munit._
 import scala.concurrent.duration._
 
-class MeteorProcessRepoSuite extends FunSuite {
-
-  override def munitValueTransforms = super.munitValueTransforms ++ List(
-    new ValueTransform("IO", {
-      case io: IO[_] => io.unsafeToFuture()
-    })
-  )
+class MeteorProcessRepoSuite extends CatsEffectSuite {
 
   test("should segregate processes by context") {
     testRepo.use { repo =>
@@ -24,7 +17,7 @@ class MeteorProcessRepoSuite extends FunSuite {
         id <- uuidF.map(_.toString())
         contextId1 <- uuidF.map(_.toString())
         contextId2 <- uuidF.map(_.toString())
-        now <- Clock[IO].realTime(TimeUnit.MILLISECONDS).map(Instant.ofEpochMilli _)
+        now <- Clock[IO].realTime.map(time => Instant.ofEpochMilli(time.toMillis))
         later = Instant.ofEpochMilli(now.toEpochMilli() + 1000)
         testResult = EncodedResult("testresult".asAttributeValue)
         _ <- repo.create(id, contextId1, now)
@@ -47,7 +40,7 @@ class MeteorProcessRepoSuite extends FunSuite {
       for {
         id <- uuidF.map(_.toString())
         contextId <- uuidF.map(_.toString())
-        now <- Clock[IO].realTime(TimeUnit.MILLISECONDS).map(Instant.ofEpochMilli _)
+        now <- Clock[IO].realTime.map(time => Instant.ofEpochMilli(time.toMillis))
         _ <- repo.create(id, contextId, now)
         process <- repo.get(id, contextId)
       } yield {
@@ -62,7 +55,7 @@ class MeteorProcessRepoSuite extends FunSuite {
       for {
         id <- uuidF.map(_.toString())
         contextId <- uuidF.map(_.toString())
-        now <- Clock[IO].realTime(TimeUnit.MILLISECONDS).map(Instant.ofEpochMilli _)
+        now <- Clock[IO].realTime.map(time => Instant.ofEpochMilli(time.toMillis))
         later = Instant.ofEpochMilli(now.toEpochMilli() + 1000)
         _ <- repo.create(id, contextId, now)
         process <- repo.create(id, contextId, later)
@@ -78,7 +71,7 @@ class MeteorProcessRepoSuite extends FunSuite {
       for {
         id <- uuidF.map(_.toString())
         contextId <- uuidF.map(_.toString())
-        now <- Clock[IO].realTime(TimeUnit.MILLISECONDS).map(Instant.ofEpochMilli _)
+        now <- Clock[IO].realTime.map(time => Instant.ofEpochMilli(time.toMillis))
         later = Instant.ofEpochMilli(now.toEpochMilli() + 1000)
         _ <- repo.create(id, contextId, now)
         _ <- repo.create(id, contextId, later)
@@ -95,7 +88,7 @@ class MeteorProcessRepoSuite extends FunSuite {
       for {
         id <- uuidF.map(_.toString())
         contextId <- uuidF.map(_.toString())
-        now <- Clock[IO].realTime(TimeUnit.MILLISECONDS).map(Instant.ofEpochMilli _)
+        now <- Clock[IO].realTime.map(time => Instant.ofEpochMilli(time.toMillis))
         later = Instant.ofEpochMilli(now.toEpochMilli() + 1000)
         testResult = EncodedResult("testresult".asAttributeValue)
         _ <- repo.create(id, contextId, now)
@@ -115,7 +108,7 @@ class MeteorProcessRepoSuite extends FunSuite {
       for {
         id <- uuidF.map(_.toString())
         contextId <- uuidF.map(_.toString())
-        now <- Clock[IO].realTime(TimeUnit.MILLISECONDS).map(Instant.ofEpochMilli _)
+        now <- Clock[IO].realTime.map(time => Instant.ofEpochMilli(time.toMillis))
         later = Instant.ofEpochMilli(now.toEpochMilli() + 1000)
         testResult = EncodedResult("testresult".asAttributeValue)
         _ <- repo.create(id, contextId, now)
@@ -136,7 +129,7 @@ class MeteorProcessRepoSuite extends FunSuite {
       for {
         id <- uuidF.map(_.toString())
         contextId <- uuidF.map(_.toString())
-        now <- Clock[IO].realTime(TimeUnit.MILLISECONDS).map(Instant.ofEpochMilli _)
+        now <- Clock[IO].realTime.map(time => Instant.ofEpochMilli(time.toMillis))
         later = Instant.ofEpochMilli(now.toEpochMilli() + 1000)
         _ <- repo.create(id, contextId, now)
         _ <- repo.markAsCompleted(
@@ -162,7 +155,7 @@ class MeteorProcessRepoSuite extends FunSuite {
       for {
         id <- uuidF.map(_.toString())
         contextId <- uuidF.map(_.toString())
-        now <- Clock[IO].realTime(TimeUnit.MILLISECONDS).map(Instant.ofEpochMilli _)
+        now <- Clock[IO].realTime.map(time => Instant.ofEpochMilli(time.toMillis))
         later = Instant.ofEpochMilli(now.toEpochMilli() + 1000)
         testResult = EncodedResult("testresult".asAttributeValue)
         _ <- repo.create(id, contextId, now)
