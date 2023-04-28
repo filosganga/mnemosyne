@@ -178,6 +178,26 @@ the library does not allow the signal to be processed again and returns the
 stored result. In case (4) the library waits for the process to either complete
 or timeout before making any decision.
 
+```mermaid
+graph TD
+
+A((Start)) --> B(Process Signal)
+B --> |Signal has never been processed before| C(Create new record and start processing)
+C --> D(Process signal)
+D --> E(Save result and expiresOn)
+E --> F(End)
+
+B --> |Signal has timed out processing| G(Update existing record and start processing)
+G --> D
+
+B --> |Signal has already been processed| H(Return stored result)
+H --> F
+
+B --> |Signal is still being processed| I(Wait for completion or timeout)
+I --> D
+```
+
+
 ## How to configure it
 
 A `deduplication.Config` is required in order to create an instance of
