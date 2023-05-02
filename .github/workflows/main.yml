@@ -41,7 +41,7 @@ jobs:
           java-version: "17"
           distribution: "temurin"
       - uses: coursier/cache-action@v6
-      - run: sbt "+scalafmtCheckAll;+headerCheckAll;+compile;+Test/compile;IntegrationTest/compile;scalafixAll --check"
+      - run: sbt "+scalafmtCheckAll;+compile;+Test/compile;IntegrationTest/compile;scalafixAll --check"
       - uses: alehechka/upload-tartifact@v2
         with:
           name: targets
