@@ -13,3 +13,5 @@ jobs:
           branches: main
           github-token: ${{secrets.BOT_GITHUB_TOKEN }}
           other-args: "--add-labels"
+          author-name: kaluza-libraries
+          author-email: 123489691+kaluza-libraries@users.noreply.github.com
