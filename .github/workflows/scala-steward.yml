@@ -14,3 +14,4 @@ jobs:
           github-app-id: ${{ vars.SCALA_STEWARD_APP_ID }}
           github-app-installation-id: ${{ vars.SCALA_STEWARD_APP_INSTALLATION_ID }}
           github-app-key: ${{ secrets.SCALA_STEWARD_APP_PRIVATE_KEY }}
+          other-args: "--add-labels"
