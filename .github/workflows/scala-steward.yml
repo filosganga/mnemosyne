@@ -11,7 +11,6 @@ jobs:
       - uses: scala-steward-org/scala-steward-action@v2
         with:
           branches: main
-          github-token: ${{secrets.BOT_GITHUB_TOKEN }}
-          other-args: "--add-labels"
-          author-name: kaluza-libraries
-          author-email: 123489691+kaluza-libraries@users.noreply.github.com
+          github-app-id: ${{ vars.SCALA_STEWARD_APP_ID }}
+          github-app-installation-id: ${{ vars.SCALA_STEWARD_APP_INSTALLATION_ID }}
+          github-app-key: ${{ secrets.SCALA_STEWARD_APP_PRIVATE_KEY }}
