@@ -1,4 +1,4 @@
-val catsVersion = "2.8.0"
+val catsVersion = "2.10.0"
 val catsEffectVersion = "3.3.14"
 val slf4jVersion = "1.7.36"
 val scalaJava8CompatVersion = "0.9.1"
