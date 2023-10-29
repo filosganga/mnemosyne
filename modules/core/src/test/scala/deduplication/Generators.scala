@@ -1,4 +1,4 @@
-package com.kaluza.mnemosyne
+package com.filippodeluca.mnemosyne
 
 import java.time.Instant
 import java.time.temporal.ChronoUnit
@@ -6,7 +6,7 @@ import java.time.temporal.ChronoUnit
 import org.scalacheck.Arbitrary._
 import org.scalacheck._
 
-import com.kaluza.mnemosyne.model._
+import com.filippodeluca.mnemosyne.model._
 
 object Generators {
 

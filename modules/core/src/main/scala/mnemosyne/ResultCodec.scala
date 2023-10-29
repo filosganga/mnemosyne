@@ -1,4 +1,4 @@
-package com.kaluza.mnemosyne
+package com.filippodeluca.mnemosyne
 
 trait ResultCodec[A, B] {
   def read(a: A): Either[Throwable, B]

@@ -1,4 +1,4 @@
-package com.kaluza.mnemosyne
+package com.filippodeluca.mnemosyne
 package meteor
 
 import cats.effect._
@@ -6,7 +6,7 @@ import cats.effect._
 import _root_.meteor.codec.Codec
 import _root_.meteor.{Client, CompositeKeysTable}
 
-import com.kaluza.mnemosyne.meteor.model._
+import com.filippodeluca.mnemosyne.meteor.model._
 
 object MeteorDeduplication {
 

@@ -1,4 +1,4 @@
-package com.kaluza.mnemosyne
+package com.filippodeluca.mnemosyne
 package meteor
 
 import java.time.Instant
@@ -11,10 +11,10 @@ import _root_.meteor.syntax._
 import org.scalacheck.Arbitrary
 import org.scalacheck.Prop._
 
-import com.kaluza.mnemosyne.Generators._
-import com.kaluza.mnemosyne.meteor.codecs._
-import com.kaluza.mnemosyne.meteor.model.EncodedResult
-import com.kaluza.mnemosyne.model._
+import com.filippodeluca.mnemosyne.Generators._
+import com.filippodeluca.mnemosyne.meteor.codecs._
+import com.filippodeluca.mnemosyne.meteor.model.EncodedResult
+import com.filippodeluca.mnemosyne.model._
 
 class MeteorCodecSuite extends munit.ScalaCheckSuite {
 

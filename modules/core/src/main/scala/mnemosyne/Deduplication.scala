@@ -1,4 +1,4 @@
-package com.kaluza.mnemosyne
+package com.filippodeluca.mnemosyne
 
 import cats.effect._
 import cats.implicits._

@@ -1,4 +1,4 @@
-package com.kaluza.mnemosyne
+package com.filippodeluca.mnemosyne
 
 import java.time.Instant
 import java.{util => ju}
@@ -8,8 +8,8 @@ import cats.implicits._
 
 import org.scalacheck.Prop._
 
-import com.kaluza.mnemosyne.Generators._
-import com.kaluza.mnemosyne.model._
+import com.filippodeluca.mnemosyne.Generators._
+import com.filippodeluca.mnemosyne.model._
 
 class ProcessStatusSuite extends munit.ScalaCheckSuite {
 

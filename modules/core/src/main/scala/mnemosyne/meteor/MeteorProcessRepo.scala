@@ -1,4 +1,4 @@
-package com.kaluza.mnemosyne
+package com.filippodeluca.mnemosyne
 package meteor
 
 import java.time.Instant
@@ -12,9 +12,9 @@ import _root_.meteor.codec.Codec
 import _root_.meteor.syntax._
 import software.amazon.awssdk.services.dynamodb.model.ReturnValue
 
-import com.kaluza.mnemosyne.meteor.codecs._
-import com.kaluza.mnemosyne.meteor.model._
-import com.kaluza.mnemosyne.model._
+import com.filippodeluca.mnemosyne.meteor.codecs._
+import com.filippodeluca.mnemosyne.meteor.model._
+import com.filippodeluca.mnemosyne.model._
 
 object MeteorProcessRepo {
 

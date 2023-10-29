@@ -1,4 +1,4 @@
-package com.kaluza.mnemosyne
+package com.filippodeluca.mnemosyne
 
 import java.time.Instant
 import java.util.concurrent.TimeoutException
@@ -11,7 +11,7 @@ import cats.implicits._
 
 import org.typelevel.log4cats.Logger
 
-import com.kaluza.mnemosyne.model._
+import com.filippodeluca.mnemosyne.model._
 
 trait DeduplicationContext[F[_], ID, ContextID, A] {
 

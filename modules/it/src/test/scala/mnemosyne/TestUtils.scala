@@ -1,14 +1,14 @@
-package com.kaluza.mnemosyne
+package com.filippodeluca.mnemosyne
 
 import _root_.meteor._
 import cats.effect._
 import cats.syntax.all._
-import com.kaluza.mnemosyne.meteor._
+import com.filippodeluca.mnemosyne.meteor._
 import java.util.UUID
 import scala.concurrent.duration._
 import software.amazon.awssdk.services.dynamodb.model.BillingMode
 import java.time.Instant
-import com.kaluza.mnemosyne.meteor.model.EncodedResult
+import com.filippodeluca.mnemosyne.meteor.model.EncodedResult
 import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
 
@@ -91,7 +91,7 @@ object DeduplicationTestUtils {
   val testRepo: Resource[IO, ProcessRepo[IO, String, String, EncodedResult]] =
     for {
       uuid <- Resource.eval(uuidF)
-      tableName = s"comms-deduplication-test-${uuid}"
+      tableName = s"mnemosyne-test-${uuid}"
       client <- clientR
       table <- Resource.make[IO, CompositeKeysTable[String, String]](
         IO(println(s"Creating table ${tableName}")) >> createTestTable(client, tableName)

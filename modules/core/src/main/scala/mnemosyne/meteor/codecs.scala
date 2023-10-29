@@ -1,4 +1,4 @@
-package com.kaluza.mnemosyne
+package com.filippodeluca.mnemosyne
 package meteor
 
 import java.time.Instant
@@ -10,9 +10,9 @@ import _root_.meteor.errors._
 import _root_.meteor.syntax._
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 
-import com.kaluza.mnemosyne.ResultCodec
-import com.kaluza.mnemosyne.meteor.model._
-import com.kaluza.mnemosyne.model._
+import com.filippodeluca.mnemosyne.ResultCodec
+import com.filippodeluca.mnemosyne.meteor.model._
+import com.filippodeluca.mnemosyne.model._
 
 package object codecs {
 

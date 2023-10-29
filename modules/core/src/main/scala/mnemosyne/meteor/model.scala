@@ -1,4 +1,4 @@
-package com.kaluza.mnemosyne.meteor
+package com.filippodeluca.mnemosyne.meteor
 package model
 
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue

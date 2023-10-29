@@ -1,9 +1,9 @@
-package com.kaluza.mnemosyne
+package com.filippodeluca.mnemosyne
 
 import cats.effect._
 import cats.implicits._
-import com.kaluza.mnemosyne.DeduplicationTestUtils._
-import com.kaluza.mnemosyne.meteor.codecs._
+import com.filippodeluca.mnemosyne.DeduplicationTestUtils._
+import com.filippodeluca.mnemosyne.meteor.codecs._
 import java.util.concurrent.TimeoutException
 import munit.CatsEffectSuite
 import scala.concurrent.duration._

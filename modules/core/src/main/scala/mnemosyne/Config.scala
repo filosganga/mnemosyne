@@ -1,4 +1,4 @@
-package com.kaluza.mnemosyne
+package com.filippodeluca.mnemosyne
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration._

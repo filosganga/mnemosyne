@@ -1,9 +1,9 @@
-package com.kaluza.mnemosyne.meteor
+package com.filippodeluca.mnemosyne.meteor
 
 import cats.effect._
 import cats.implicits._
-import com.kaluza.mnemosyne.DeduplicationTestUtils._
-import com.kaluza.mnemosyne.meteor.model.EncodedResult
+import com.filippodeluca.mnemosyne.DeduplicationTestUtils._
+import com.filippodeluca.mnemosyne.meteor.model.EncodedResult
 import java.time.Instant
 import meteor.syntax._
 import munit._
