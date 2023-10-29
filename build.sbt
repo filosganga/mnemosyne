@@ -7,7 +7,7 @@ val meteorVersion = "1.0.31"
 val log4CatsVersion = "2.5.0"
 val munitVersion = "1.0.0-M7"
 val munitCatsEffectVersion = "1.0.7"
-val logBackVersion = "1.4.4"
+val logBackVersion = "1.4.11"
 val log4j2Version = "2.19.0"
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
