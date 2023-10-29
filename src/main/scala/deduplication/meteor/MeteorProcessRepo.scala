@@ -111,8 +111,8 @@ object MeteorProcessRepo {
             ReturnValue.ALL_OLD
           )
           .as[ProcessRepo.AttemptResult](ProcessRepo.AttemptSucceded)
-          .recover {
-            case errors.ConditionalCheckFailed(_) => ProcessRepo.AttemptFailed
+          .recover { case errors.ConditionalCheckFailed(_) =>
+            ProcessRepo.AttemptFailed
           }
 
     }

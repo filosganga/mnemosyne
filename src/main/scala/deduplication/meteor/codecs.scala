@@ -51,8 +51,8 @@ package object codecs {
         ).asAttributeValue
     }
 
-  implicit def resultCodecFromMeteorCodec[A](
-      implicit meteorCodec: Codec[A]
+  implicit def resultCodecFromMeteorCodec[A](implicit
+      meteorCodec: Codec[A]
   ): ResultCodec[EncodedResult, A] =
     new ResultCodec[EncodedResult, A] {
       def read(res: EncodedResult): Either[Throwable, A] = meteorCodec.read(res.value)

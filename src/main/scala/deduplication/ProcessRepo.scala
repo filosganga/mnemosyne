@@ -11,15 +11,13 @@ object ProcessRepo {
   case object AttemptFailed extends AttemptResult
 }
 
-/**
-  * An interface for a data backend used by Deduplication.
+/** An interface for a data backend used by Deduplication.
   *
   * It will store [[Process]] objects, identified by [[id]] and [[contextId]]
   */
 trait ProcessRepo[F[_], ID, ContextID, A] {
 
-  /**
-    * Try to create a new process entry in the repo.
+  /** Try to create a new process entry in the repo.
     *
     * It should only store it if the process is new, otherwise it should return the existing process
     * and not change anything
@@ -35,8 +33,7 @@ trait ProcessRepo[F[_], ID, ContextID, A] {
       now: Instant
   ): F[Option[Process[ID, ContextID, A]]]
 
-  /**
-    * Mark a process as completed and store its result
+  /** Mark a process as completed and store its result
     *
     * @param id The id of the process
     * @param contextId The context of the process
@@ -53,8 +50,7 @@ trait ProcessRepo[F[_], ID, ContextID, A] {
       ttl: Option[FiniteDuration]
   ): F[Unit]
 
-  /**
-    * Retrieve a process entry from the repo
+  /** Retrieve a process entry from the repo
     *
     * @param id The id of the process
     * @param contextId The context of the process
@@ -65,8 +61,7 @@ trait ProcessRepo[F[_], ID, ContextID, A] {
       contextId: ContextID
   ): F[Option[Process[ID, ContextID, A]]]
 
-  /**
-    * Try to replace a process entry in the repo.
+  /** Try to replace a process entry in the repo.
     *
     * This operation should only succeed if [[oldStartedAt]] is the same as the 'startedAt' field in
     * the existing process. If there is a mismatch the operation should fail.

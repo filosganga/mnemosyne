@@ -64,7 +64,9 @@ class ProcessStatusSuite extends munit.ScalaCheckSuite {
     }
   }
 
-  property("processStatus should return Expired if the expiresOn is present and it is in the past") {
+  property(
+    "processStatus should return Expired if the expiresOn is present and it is in the past"
+  ) {
     forAll { process: Process[ju.UUID, ju.UUID, String] =>
 
       val now = Instant.now()

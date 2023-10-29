@@ -6,8 +6,8 @@ import cats.implicits._
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 
 trait Deduplication[F[_], ID, ContextID, Encoded] {
-  def context[A](id: ContextID)(
-      implicit codec: ResultCodec[Encoded, A]
+  def context[A](id: ContextID)(implicit
+      codec: ResultCodec[Encoded, A]
   ): DeduplicationContext[F, ID, ContextID, A]
 }
 

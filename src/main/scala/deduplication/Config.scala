@@ -5,8 +5,7 @@ import scala.concurrent.duration._
 
 import Config._
 
-/**
-  * Configure the library
+/** Configure the library
   *
   * The [[PollStrategy]] controls the polling for waiting for a started process to complete or timeout. For
   * this reason is important for the pollStrategy.maxPollDuration to be > maxProcessingTime otherwise the poll

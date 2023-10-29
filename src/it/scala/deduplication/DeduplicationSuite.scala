@@ -161,8 +161,8 @@ class DeduplicationSuite extends CatsEffectSuite {
         val started = ps.count(_.started)
         val completed = ps.count(_.completed)
         val timestamps = ps.flatMap(_.startedAt).map(_.toEpochMilli()).sorted
-        val timeDiffs = timestamps.zip(timestamps.tail).map {
-          case (previous, following) => following - previous
+        val timeDiffs = timestamps.zip(timestamps.tail).map { case (previous, following) =>
+          following - previous
         }
         assertEquals(clue(started), clue(sampleLength))
         assertEquals(clue(completed), 0)

@@ -150,7 +150,9 @@ class MeteorProcessRepoSuite extends CatsEffectSuite {
     }
   }
 
-  test("`attemptReplacing` should only update the process if the `startedAt` field did not change") {
+  test(
+    "`attemptReplacing` should only update the process if the `startedAt` field did not change"
+  ) {
     testRepo.use { repo =>
       for {
         id <- uuidF.map(_.toString())

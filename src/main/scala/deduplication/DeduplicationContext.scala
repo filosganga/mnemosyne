@@ -17,8 +17,7 @@ trait DeduplicationContext[F[_], ID, ContextID, A] {
 
   def contextId: ContextID
 
-  /**
-    * Do a best effort attempt at ensuring a process [[fa]] is successfully executed only once.
+  /** Do a best effort attempt at ensuring a process [[fa]] is successfully executed only once.
     *
     * If the process has already ran successfully before, it will return the original result of
     * [[fa]]
@@ -30,8 +29,7 @@ trait DeduplicationContext[F[_], ID, ContextID, A] {
     */
   def protect(id: ID, fa: F[A]): F[A]
 
-  /**
-    * Do a best effort attempt at ensuring a process [[fa]] is successfully executed only once.
+  /** Do a best effort attempt at ensuring a process [[fa]] is successfully executed only once.
     *
     * If the process has already ran successfully before, it will return the original result of
     * [[fa]]
@@ -44,8 +42,7 @@ trait DeduplicationContext[F[_], ID, ContextID, A] {
     */
   def protect(id: ID, fa: F[A], onDeduplicateDetected: A => F[Unit]): F[A]
 
-  /**
-    * Same as `protect`, but returns a F[Result[A]] to inform the caller if a
+  /** Same as `protect`, but returns a F[Result[A]] to inform the caller if a
     * duplicate was detected.
     *
     * Returns F[New[A]] if the process is executed or F[Duplicate[A]] if
@@ -57,8 +54,7 @@ trait DeduplicationContext[F[_], ID, ContextID, A] {
     */
   def protectDetailed(id: ID, fa: F[A]): F[Result[A]]
 
-  /**
-    * Same as `protect`, but returns a F[Result[A]] to inform the caller if a
+  /** Same as `protect`, but returns a F[Result[A]] to inform the caller if a
     * duplicate was detected.
     *
     * Returns F[New[A]] if the process is executed or F[Duplicate[A]] if
@@ -158,8 +154,9 @@ object DeduplicationContext {
         for {
           now <- nowF[F]
           totalDuration = (now.toEpochMilli - pollingStartedAt.toEpochMilli).milliseconds
-          _ <- if (totalDuration >= config.pollStrategy.maxPollDuration) stopRetry
-          else Applicative[F].unit
+          _ <-
+            if (totalDuration >= config.pollStrategy.maxPollDuration) stopRetry
+            else Applicative[F].unit
           status = processStatus[Encoded](config.maxProcessingTime, now)(existingProcess)
           result <- status match {
             case ProcessStatus.NotStarted() => runProcess(id, fa)

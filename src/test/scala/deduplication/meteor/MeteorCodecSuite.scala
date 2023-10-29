@@ -24,8 +24,8 @@ class MeteorCodecSuite extends munit.ScalaCheckSuite {
   checkEncodeDecode[ju.UUID]
   checkEncodeDecode[Instant]
 
-  def checkEncodeDecode[T: Arbitrary: Codec](
-      implicit loc: munit.Location,
+  def checkEncodeDecode[T: Arbitrary: Codec](implicit
+      loc: munit.Location,
       classTag: ClassTag[T]
   ): Unit = {
     property(s"should encode/decode ${classTag.runtimeClass}") {
