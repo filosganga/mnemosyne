@@ -30,17 +30,10 @@ provides these two features:
 
 ## Add the dependency to your project
 
-You'll need to add our public Maven repository:
+Add this snippet to your `build.sbt`
 
 ```scala
-resolvers += "Artifactory maven" at "https://kaluza.jfrog.io/artifactory/maven"
-
-```
-
-Then add this snippet to your `build.sbt`
-
-```scala
-libraryDependencies += "com.ovoenergy.comms" %% "deduplication" % "$VERSION"
+libraryDependencies += "com.filippodeluca" %% "mnemosyne" % "$VERSION"
 ```
 
 An [example terraform file](example.tf) is provided for provisioning the backing
@@ -74,7 +67,7 @@ results were.
 The library has a built-in implementation of `ProcessRepo` that uses DynamoDB
 and [Meteor](https://d2a4u.github.io/meteor/) under the hood. You can use it by
 creating an instance of `Deduplication` with the
-`com.kaluza.mnemosyne.meteor.MeteorDeduplication` factory object.
+`com.filippodeluca.mnemosyne.meteor.MeteorDeduplication` factory object.
 
 If you use the meteor implementation you will need to make sure the meteor
 codecs for the return type of your operations are in scope when you instantiate
@@ -90,9 +83,9 @@ consumed more than once, the side effects will not be re-executed.
 
 ```scala
 import cats.effect._
-import com.kaluza.mnemosyne
-import com.kaluza.mnemosyne.meteor.MeteorDeduplication
-import com.kaluza.mnemosyne.meteor.codecs._
+import com.filippodeluca.mnemosyne
+import com.filippodeluca.mnemosyne.meteor.MeteorDeduplication
+import com.filippodeluca.mnemosyne.meteor.codecs._
 import meteor.CompositeKeysTable
 import meteor.syntax._
 
