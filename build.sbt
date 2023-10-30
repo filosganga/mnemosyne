@@ -1,6 +1,6 @@
 val catsVersion = "2.8.0"
 val catsEffectVersion = "3.3.14"
-val slf4jVersion = "2.0.9"
+val slf4jVersion = "1.7.36"
 val scalaJava8CompatVersion = "0.9.1"
 val awsSdkVersion = "2.18.13"
 val meteorVersion = "1.0.31"
