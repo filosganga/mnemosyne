@@ -8,7 +8,7 @@ val log4CatsVersion = "2.6.0"
 val munitVersion = "1.0.0-M10"
 val munitCatsEffectVersion = "1.0.7"
 val logBackVersion = "1.4.4"
-val log4j2Version = "2.19.0"
+val log4j2Version = "2.24.1"
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
@@ -24,25 +24,25 @@ ThisBuild / scalaVersion := "2.13.12"
 // ThisBuild / crossScalaVersions ++= List("3.3.1")
 
 ThisBuild / scmInfo := Some(
-      ScmInfo(
-        url("https://github.com/filosganga/mnemosyne"),
-        "git@github.com:filosganga/mnemosyne.git"
-      )
-    )
-ThisBuild /developers := List(
-      Developer(
-        "filosganga",
-        "Filippo De Luca",
-        "filippo.deluca@ovoenergy.com",
-        url("https://github.com/filosganga")
-      ),
-      Developer(
-        "SystemFw",
-        "Fabio Labella",
-        "fabio.labella@ovoenergy.com",
-        url("https://github.com/SystemFw")
-      )
-    )
+  ScmInfo(
+    url("https://github.com/filosganga/mnemosyne"),
+    "git@github.com:filosganga/mnemosyne.git"
+  )
+)
+ThisBuild / developers := List(
+  Developer(
+    "filosganga",
+    "Filippo De Luca",
+    "filippo.deluca@ovoenergy.com",
+    url("https://github.com/filosganga")
+  ),
+  Developer(
+    "SystemFw",
+    "Fabio Labella",
+    "fabio.labella@ovoenergy.com",
+    url("https://github.com/SystemFw")
+  )
+)
 
 ThisBuild / semanticdbEnabled := true
 ThisBuild / semanticdbVersion := scalafixSemanticdb.revision
@@ -112,4 +112,3 @@ val it = project
 val mnemosyne = project
   .in(file("."))
   .aggregate(core, it)
-  
