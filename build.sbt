@@ -6,7 +6,7 @@ val awsSdkVersion = "2.21.10"
 val meteorVersion = "1.0.78"
 val log4CatsVersion = "2.6.0"
 val munitVersion = "1.0.0-M10"
-val munitCatsEffectVersion = "1.0.7"
+val munitCatsEffectVersion = "2.0.0"
 val logBackVersion = "1.4.4"
 val log4j2Version = "2.19.0"
 
@@ -24,25 +24,25 @@ ThisBuild / scalaVersion := "2.13.12"
 // ThisBuild / crossScalaVersions ++= List("3.3.1")
 
 ThisBuild / scmInfo := Some(
-      ScmInfo(
-        url("https://github.com/filosganga/mnemosyne"),
-        "git@github.com:filosganga/mnemosyne.git"
-      )
-    )
-ThisBuild /developers := List(
-      Developer(
-        "filosganga",
-        "Filippo De Luca",
-        "filippo.deluca@ovoenergy.com",
-        url("https://github.com/filosganga")
-      ),
-      Developer(
-        "SystemFw",
-        "Fabio Labella",
-        "fabio.labella@ovoenergy.com",
-        url("https://github.com/SystemFw")
-      )
-    )
+  ScmInfo(
+    url("https://github.com/filosganga/mnemosyne"),
+    "git@github.com:filosganga/mnemosyne.git"
+  )
+)
+ThisBuild / developers := List(
+  Developer(
+    "filosganga",
+    "Filippo De Luca",
+    "filippo.deluca@ovoenergy.com",
+    url("https://github.com/filosganga")
+  ),
+  Developer(
+    "SystemFw",
+    "Fabio Labella",
+    "fabio.labella@ovoenergy.com",
+    url("https://github.com/SystemFw")
+  )
+)
 
 ThisBuild / semanticdbEnabled := true
 ThisBuild / semanticdbVersion := scalafixSemanticdb.revision
@@ -77,7 +77,7 @@ val core = project
       "org.typelevel" %% "log4cats-slf4j" % log4CatsVersion,
       "org.slf4j" % "slf4j-api" % slf4jVersion,
       "org.typelevel" %% "cats-effect-laws" % catsEffectVersion % Test,
-      "org.typelevel" %% "munit-cats-effect-3" % munitCatsEffectVersion % Test,
+      "org.typelevel" %% "munit-cats-effect" % munitCatsEffectVersion % Test,
       "org.scalameta" %% "munit-scalacheck" % munitVersion % Test,
       "ch.qos.logback" % "logback-classic" % logBackVersion % Test,
       "org.slf4j" % "slf4j-api" % slf4jVersion % Test,
@@ -98,7 +98,7 @@ val it = project
     javacOptions ++= Seq("-Xlint:unchecked", "-Xlint:deprecation"),
     addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.13.2" cross CrossVersion.full),
     libraryDependencies ++= Seq(
-      "org.typelevel" %% "munit-cats-effect-3" % munitCatsEffectVersion % Test,
+      "org.typelevel" %% "munit-cats-effect" % munitCatsEffectVersion % Test,
       "org.scalameta" %% "munit-scalacheck" % munitVersion % Test,
       "ch.qos.logback" % "logback-classic" % logBackVersion % Test,
       "org.slf4j" % "slf4j-api" % slf4jVersion % Test,
@@ -112,4 +112,3 @@ val it = project
 val mnemosyne = project
   .in(file("."))
   .aggregate(core, it)
-  
