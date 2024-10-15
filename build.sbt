@@ -24,25 +24,25 @@ ThisBuild / scalaVersion := "2.13.12"
 // ThisBuild / crossScalaVersions ++= List("3.3.1")
 
 ThisBuild / scmInfo := Some(
-      ScmInfo(
-        url("https://github.com/filosganga/mnemosyne"),
-        "git@github.com:filosganga/mnemosyne.git"
-      )
-    )
-ThisBuild /developers := List(
-      Developer(
-        "filosganga",
-        "Filippo De Luca",
-        "filippo.deluca@ovoenergy.com",
-        url("https://github.com/filosganga")
-      ),
-      Developer(
-        "SystemFw",
-        "Fabio Labella",
-        "fabio.labella@ovoenergy.com",
-        url("https://github.com/SystemFw")
-      )
-    )
+  ScmInfo(
+    url("https://github.com/filosganga/mnemosyne"),
+    "git@github.com:filosganga/mnemosyne.git"
+  )
+)
+ThisBuild / developers := List(
+  Developer(
+    "filosganga",
+    "Filippo De Luca",
+    "filippo.deluca@ovoenergy.com",
+    url("https://github.com/filosganga")
+  ),
+  Developer(
+    "SystemFw",
+    "Fabio Labella",
+    "fabio.labella@ovoenergy.com",
+    url("https://github.com/SystemFw")
+  )
+)
 
 ThisBuild / semanticdbEnabled := true
 ThisBuild / semanticdbVersion := scalafixSemanticdb.revision
@@ -66,7 +66,7 @@ val core = project
     scalacOptions -= "-Xfatal-warnings", // enable all options from sbt-tpolecat except fatal warnings
     initialCommands := s"import com.filosganga.mnemosyne._",
     javacOptions ++= Seq("-Xlint:unchecked", "-Xlint:deprecation"),
-    addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.13.2" cross CrossVersion.full),
+    addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.13.3" cross CrossVersion.full),
     buildInfoPackage := "com.filippodeluca.mnemosyne",
     libraryDependencies ++= Seq(
       "org.typelevel" %% "cats-core" % catsVersion,
@@ -96,7 +96,7 @@ val it = project
     scalacOptions -= "-Xfatal-warnings", // enable all options from sbt-tpolecat except fatal warnings
     initialCommands := s"import com.filosganga.mnemosyne._",
     javacOptions ++= Seq("-Xlint:unchecked", "-Xlint:deprecation"),
-    addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.13.2" cross CrossVersion.full),
+    addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.13.3" cross CrossVersion.full),
     libraryDependencies ++= Seq(
       "org.typelevel" %% "munit-cats-effect-3" % munitCatsEffectVersion % Test,
       "org.scalameta" %% "munit-scalacheck" % munitVersion % Test,
@@ -112,4 +112,3 @@ val it = project
 val mnemosyne = project
   .in(file("."))
   .aggregate(core, it)
-  
