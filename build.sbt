@@ -8,7 +8,7 @@ val log4CatsVersion = "2.6.0"
 val munitVersion = "1.0.0-M10"
 val munitCatsEffectVersion = "1.0.7"
 val logBackVersion = "1.4.4"
-val log4j2Version = "2.19.0"
+val log4j2Version = "2.24.2"
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
