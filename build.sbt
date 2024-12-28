@@ -16,12 +16,7 @@ ThisBuild / semanticdbEnabled := true
 ThisBuild / semanticdbVersion := scalafixSemanticdb.revision
 ThisBuild / scalaVersion := "3.6.2"
 ThisBuild / crossScalaVersions ++= Seq("3.3.4", "2.13.15")
-ThisBuild / scalacOptions ++= {
-  CrossVersion.partialVersion(scalaVersion.value) match {
-    case Some((2, _)) => List("-Xsource:3")
-    case _ => List.empty
-  }
-}
+
 ThisBuild / versionScheme := Some("early-semver")
 ThisBuild / startYear := Some(2020)
 ThisBuild / licenses += License.Apache2
@@ -71,6 +66,25 @@ ThisBuild / excludeDependencies ++= Seq(
   ExclusionRule("org.apache.logging.log4j", "log4j-slf4j-impl")
 )
 
+val scalacOptionsSettings = List(
+  scalacOptions ++= {
+    CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, _)) => List("-Xsource:3")
+      case _ => List.empty
+    }
+  },
+  scalacOptions := {
+    CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((3, 6)) =>
+        scalacOptions.value.map {
+          case "-Ykind-projector" => "-Xkind-projector"
+          case other => other
+        }
+      case _ => scalacOptions.value
+    }
+  }
+)
+
 val sonatypeSettings = List(
   // Setting it on ThisBuild does not have any effect
   sonatypePublishToBundle := {
@@ -100,6 +114,7 @@ lazy val it = project
       "-Dlogback.configurationFile=logback-integration-test.xml",
       "-Dsoftware.amazon.awssdk.http.async.service.impl=software.amazon.awssdk.http.nio.netty.NettySdkAsyncHttpService"
     ),
+    scalacOptionsSettings,
     libraryDependencies ++= Seq(
       "org.scalameta" %% "munit" % munitVersion % Test,
       "org.scalameta" %% "munit-scalacheck" % munitScalacheckVersion % Test,
@@ -115,6 +130,7 @@ lazy val core = project
   .settings(
     name := "mnemosyne-core",
     buildInfoPackage := "com.filippodeluca.mnemosyne",
+    scalacOptionsSettings,
     libraryDependencies ++= Seq(
       "org.typelevel" %% "cats-core" % catsVersion,
       "org.typelevel" %% "cats-effect" % catsEffectVersion,
@@ -136,6 +152,7 @@ lazy val dynamodb = project
   .settings(
     name := "mnemosyne-dynamodb",
     buildInfoPackage := "com.filippodeluca.mnemosyne",
+    scalacOptionsSettings,
     libraryDependencies ++= Seq(
       "org.typelevel" %% "cats-core" % catsVersion,
       "org.typelevel" %% "cats-effect" % catsEffectVersion,
@@ -158,6 +175,7 @@ lazy val redis = project
   .settings(
     name := "mnemosyne-redis",
     buildInfoPackage := "com.filippodeluca.mnemosyne",
+    scalacOptionsSettings,
     libraryDependencies ++= Seq(
       "org.typelevel" %% "cats-core" % catsVersion,
       "org.typelevel" %% "cats-effect" % catsEffectVersion,
