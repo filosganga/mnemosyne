@@ -1,7 +1,6 @@
 val catsVersion = "2.12.0"
 val catsEffectVersion = "3.5.7"
 val slf4jVersion = "2.0.16"
-val scalaJava8CompatVersion = "1.0.2"
 val awsSdkVersion = "2.29.43"
 val log4CatsVersion = "2.7.0"
 val munitVersion = "1.0.3"
@@ -9,6 +8,7 @@ val munitScalacheckVersion = "1.0.0"
 val munitCatsEffectVersion = "2.0.0"
 val logBackVersion = "1.5.15"
 val log4j2Version = "2.24.3"
+val lettuceVersion = "6.5.1.RELEASE"
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
@@ -17,14 +17,14 @@ ThisBuild / semanticdbVersion := scalafixSemanticdb.revision
 ThisBuild / scalaVersion := "3.6.2"
 ThisBuild / crossScalaVersions ++= Seq("3.3.4", "2.13.15")
 ThisBuild / scalacOptions ++= {
-  if (scalaVersion.value.startsWith("2.13")) {
-    Seq("-Xsource:3")
-  } else {
-    Seq.empty
+  CrossVersion.partialVersion(scalaVersion.value) match {
+    case Some((2, _)) => List("-Xsource:3")
+    case _ => List.empty
   }
 }
 ThisBuild / versionScheme := Some("early-semver")
-ThisBuild / licenses := Seq(("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0")))
+ThisBuild / startYear := Some(2020)
+ThisBuild / licenses += License.Apache2
 ThisBuild / organization := "com.filippodeluca"
 ThisBuild / organizationHomepage := Some(url("http://filippodeluca.com"))
 ThisBuild / scmInfo := Some(
@@ -47,6 +47,21 @@ ThisBuild / developers := List(
     url("https://github.com/SystemFw")
   )
 )
+ThisBuild / pomIncludeRepository := { _ => false }
+ThisBuild / publishMavenStyle := true
+ThisBuild / sonatypeCredentialHost := "s01.oss.sonatype.org"
+ThisBuild / publishTo := sonatypePublishToBundle.value
+ThisBuild / credentials ++= {
+  for {
+    usr <- sys.env.get("SONATYPE_USER")
+    password <- sys.env.get("SONATYPE_PASS")
+  } yield Credentials(
+    "Sonatype Nexus Repository Manager",
+    "s01.oss.sonatype.org",
+    usr,
+    password
+  )
+}.toList
 
 ThisBuild / excludeDependencies ++= Seq(
   ExclusionRule("commons-logging", "commons-logging"),
@@ -54,6 +69,17 @@ ThisBuild / excludeDependencies ++= Seq(
   ExclusionRule("log4j", "log4j"),
   ExclusionRule("org.apache.logging.log4j", "log4j-core"),
   ExclusionRule("org.apache.logging.log4j", "log4j-slf4j-impl")
+)
+
+val sonatypeSettings = List(
+  // Setting it on ThisBuild does not have any effect
+  sonatypePublishToBundle := {
+    if (isSnapshot.value) {
+      Some(sonatypeSnapshotResolver.value)
+    } else {
+      Some(Resolver.file("sonatype-local-bundle", sonatypeBundleDirectory.value))
+    }
+  }
 )
 
 val loggingOverrideDependencies = List(
@@ -68,6 +94,7 @@ lazy val it = project
   .dependsOn(core, dynamodb)
   .settings(
     name := "mnemosyne-it",
+    publish / skip := true,
     Test / fork := true,
     Test / javaOptions ++= Seq(
       "-Dlogback.configurationFile=logback-integration-test.xml",
@@ -91,7 +118,6 @@ lazy val core = project
     libraryDependencies ++= Seq(
       "org.typelevel" %% "cats-core" % catsVersion,
       "org.typelevel" %% "cats-effect" % catsEffectVersion,
-      "org.scala-lang.modules" %% "scala-java8-compat" % scalaJava8CompatVersion,
       "org.typelevel" %% "log4cats-core" % log4CatsVersion,
       "org.typelevel" %% "log4cats-slf4j" % log4CatsVersion, // TODO We should not depend directly on it
       "ch.qos.logback" % "logback-classic" % logBackVersion % Test,
@@ -113,8 +139,29 @@ lazy val dynamodb = project
     libraryDependencies ++= Seq(
       "org.typelevel" %% "cats-core" % catsVersion,
       "org.typelevel" %% "cats-effect" % catsEffectVersion,
-      "org.scala-lang.modules" %% "scala-java8-compat" % scalaJava8CompatVersion,
       "software.amazon.awssdk" % "dynamodb" % awsSdkVersion,
+      "org.typelevel" %% "log4cats-core" % log4CatsVersion,
+      "org.typelevel" %% "log4cats-slf4j" % log4CatsVersion, // TODO We should not depend directly on it
+      "ch.qos.logback" % "logback-classic" % logBackVersion % Test,
+      "org.typelevel" %% "cats-effect-laws" % catsEffectVersion % Test,
+      "org.scalameta" %% "munit" % munitVersion % Test,
+      "org.scalameta" %% "munit-scalacheck" % munitScalacheckVersion % Test,
+      "org.typelevel" %% "munit-cats-effect" % munitCatsEffectVersion % Test
+    ),
+    libraryDependencies ++= loggingOverrideDependencies.map(_ % Test)
+  )
+
+lazy val redis = project
+  .in(file("modules/redis"))
+  .dependsOn(core % "compile->compile;test->test")
+  .enablePlugins(BuildInfoPlugin)
+  .settings(
+    name := "mnemosyne-redis",
+    buildInfoPackage := "com.filippodeluca.mnemosyne",
+    libraryDependencies ++= Seq(
+      "org.typelevel" %% "cats-core" % catsVersion,
+      "org.typelevel" %% "cats-effect" % catsEffectVersion,
+      "io.lettuce" % "lettuce-core" % lettuceVersion,
       "org.typelevel" %% "log4cats-core" % log4CatsVersion,
       "org.typelevel" %% "log4cats-slf4j" % log4CatsVersion, // TODO We should not depend directly on it
       "ch.qos.logback" % "logback-classic" % logBackVersion % Test,
@@ -128,8 +175,9 @@ lazy val dynamodb = project
 
 lazy val mnemosyne = project
   .in(file("."))
-  .aggregate(core, dynamodb, it)
+  .aggregate(core, dynamodb, redis, it)
   .settings(
     name := "mnemosyne",
-    publishArtifact := false
+    publishArtifact := false,
+    publish / skip := true
   )

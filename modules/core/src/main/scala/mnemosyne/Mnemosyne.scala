@@ -1,17 +1,32 @@
+/*
+ * Copyright 2020 com.filippodeluca
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.filippodeluca.mnemosyne
 
 import java.time.Instant
 import java.util.concurrent.TimeoutException
-import scala.compat.java8.DurationConverters.*
+import scala.jdk.DurationConverters.*
 import scala.concurrent.duration.*
 
 import cats.FlatMap
 import cats.effect.{Async, Clock, Sync, Temporal}
 import cats.syntax.all.*
 
-import org.typelevel.log4cats.slf4j.Slf4jLogger
-
 import model.*
+import org.typelevel.log4cats.LoggerFactory
 
 trait Mnemosyne[F[_], Id, ProcessorId] {
 
@@ -115,8 +130,9 @@ object Mnemosyne {
 
   def apply[F[_]: Async, ID, ProcessorID](
       repo: Persistence[F, ID, ProcessorID],
-      config: Config[ProcessorID]
-  ): F[Mnemosyne[F, ID, ProcessorID]] = Slf4jLogger.create[F].map { logger =>
+      config: Config[ProcessorID],
+      loggerFactory: LoggerFactory[F]
+  ): F[Mnemosyne[F, ID, ProcessorID]] = loggerFactory.create.map { logger =>
     new Mnemosyne[F, ID, ProcessorID] {
 
       override def tryStartProcess(id: ID): F[Outcome[F]] = {
