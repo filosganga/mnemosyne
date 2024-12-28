@@ -123,9 +123,8 @@ object DynamoDbDecoder {
       if (av.hasM()) {
         av.m()
           .asScala
-          .map {
-            case (k, v) =>
-              (k, DynamoDbDecoder[A].read(v))
+          .map { case (k, v) =>
+            (k, DynamoDbDecoder[A].read(v))
           }
           .foldLeft(Map.empty[String, A].asRight[DecoderFailure]) { (fs, fx) =>
             for {

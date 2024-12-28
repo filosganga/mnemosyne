@@ -4,11 +4,10 @@ import java.time.Instant
 
 object model {
 
-  /**
-    * The outcome of starting a process.
+  /** The outcome of starting a process.
     *
-    * It ould be either New or Duplicate. The New has a markAsComplete member
-    * that should be used to mark the process as complete after it has succeeded
+    * It ould be either New or Duplicate. The New has a markAsComplete member that should be used to
+    * mark the process as complete after it has succeeded
     */
   sealed trait Outcome[F[_]]
   object Outcome {

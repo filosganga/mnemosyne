@@ -5,12 +5,11 @@ import scala.concurrent.duration.*
 
 import Config.*
 
-/**
-  * Configure the library
+/** Configure the library
   *
-  * The [[PollStrategy]] controls the polling for waiting for a started process to complete or timeout. For
-  * this reason is important for the pollStrategy.maxPollDuration to be > maxProcessingTime otherwise the poll
-  * will always timeout in case of a stale process.
+  * The [[PollStrategy]] controls the polling for waiting for a started process to complete or
+  * timeout. For this reason is important for the pollStrategy.maxPollDuration to be >
+  * maxProcessingTime otherwise the poll will always timeout in case of a stale process.
   *
   * @param tableName
   * @param processorId
