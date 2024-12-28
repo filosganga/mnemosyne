@@ -20,8 +20,9 @@ import java.time.Instant
 import scala.concurrent.duration.FiniteDuration
 
 import model.*
+import memoization.*
 
-trait Persistence[F[_], Id, ProcessorId] {
+trait Persistence[F[_], Id, ProcessorId, MemoizedFormat] {
 
   def startProcessingUpdate(
       id: Id,
@@ -35,6 +36,19 @@ trait Persistence[F[_], Id, ProcessorId] {
       now: Instant,
       ttl: Option[FiniteDuration]
   ): F[Unit]
+
+  def completeProcessWithMemoization[A](
+      id: Id,
+      processorId: ProcessorId,
+      now: Instant,
+      ttl: Option[FiniteDuration],
+      memoized: A
+  )(implicit memoizedEncoder: MemoizedEncoder[A, MemoizedFormat]): F[Unit]
+
+  def getMemoizedValue[A](
+      id: Id,
+      processorId: ProcessorId
+  )(implicit memoizedDecoder: MemoizedDecoder[A, MemoizedFormat]): F[Option[A]]
 
   def invalidateProcess(
       id: Id,

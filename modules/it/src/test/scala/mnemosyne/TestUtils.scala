@@ -26,14 +26,14 @@ import cats.*
 import cats.effect.*
 import cats.implicits.*
 
+import software.amazon.awssdk.services.dynamodb.*
 import software.amazon.awssdk.services.dynamodb.model.*
-import software.amazon.awssdk.services.dynamodb.{model as _, *}
 
 import dynamodb.*
 
 package object TestUtils {
 
-  def persistenceResource[F[_]: Async]: Resource[F, Persistence[F, UUID, UUID]] =
+  def persistenceResource[F[_]: Async]: Resource[F, Persistence[F, UUID, UUID, AttributeValue]] =
     for {
       dynamoclient <- dynamoClientResource[F]
       tableName <- Resource.eval(randomTableName)

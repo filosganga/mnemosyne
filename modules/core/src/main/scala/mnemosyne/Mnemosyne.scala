@@ -17,7 +17,6 @@
 package com.filippodeluca.mnemosyne
 
 import java.time.Instant
-import java.util.concurrent.TimeoutException
 import scala.concurrent.duration.*
 import scala.jdk.DurationConverters.*
 
@@ -28,8 +27,9 @@ import cats.syntax.all.*
 import org.typelevel.log4cats.LoggerFactory
 
 import model.*
+import memoization.*
 
-trait Mnemosyne[F[_], Id, ProcessorId] {
+trait Mnemosyne[F[_], Id, ProcessorId, MemoizedFormat] {
 
   /** Try to start a process.
     *
@@ -62,6 +62,13 @@ trait Mnemosyne[F[_], Id, ProcessorId] {
     *   just started process.
     */
   def tryStartProcess(id: Id): F[Outcome[F]]
+
+  def memoizedTryStartProcess[A](
+      id: Id
+  )(implicit
+      memoizedEncoder: MemoizedEncoder[A, MemoizedFormat],
+      memoizedDecoder: MemoizedDecoder[A, MemoizedFormat]
+  ): F[MemoizedOutcome[F, A]]
 
   /** Do the best effort to ensure a process to be successfully executed only once.
     *
@@ -129,12 +136,12 @@ object Mnemosyne {
     }
   }
 
-  def apply[F[_]: Async, ID, ProcessorID](
-      repo: Persistence[F, ID, ProcessorID],
+  def apply[F[_]: Async, ID, ProcessorID, MemoizedFormat](
+      persistence: Persistence[F, ID, ProcessorID, MemoizedFormat],
       config: Config[ProcessorID],
       loggerFactory: LoggerFactory[F]
-  ): F[Mnemosyne[F, ID, ProcessorID]] = loggerFactory.create.map { logger =>
-    new Mnemosyne[F, ID, ProcessorID] {
+  ): F[Mnemosyne[F, ID, ProcessorID, MemoizedFormat]] = loggerFactory.create.map { logger =>
+    new Mnemosyne[F, ID, ProcessorID, MemoizedFormat] {
 
       override def tryStartProcess(id: ID): F[Outcome[F]] = {
 
@@ -157,7 +164,9 @@ object Mnemosyne {
               val stopRetry = logger.warn(
                 s"Process still running, stop retry-ing ${logContext}"
               ) >> Sync[F]
-                .raiseError[Outcome[F]](new TimeoutException(s"Stop polling after ${pollNo} polls"))
+                .raiseError[Outcome[F]](
+                  MnemosyneError.Timeout(s"Stop polling after ${pollNo} polls", None)
+                )
 
               val retry = logger.debug(
                 s"Process still running, retry-ing ${logContext}"
@@ -182,10 +191,11 @@ object Mnemosyne {
                 .as {
                   Outcome.New(
                     Clock[F].realTimeInstant.flatMap { now =>
-                      repo.completeProcess(id, config.processorId, now, config.ttl).flatTap { _ =>
-                        logger.debug(
-                          s"Process marked as completed ${logContext}"
-                        )
+                      persistence.completeProcess(id, config.processorId, now, config.ttl).flatTap {
+                        _ =>
+                          logger.debug(
+                            s"Process marked as completed ${logContext}"
+                          )
                       }
                     }
                   )
@@ -202,7 +212,93 @@ object Mnemosyne {
 
           for {
             now <- Clock[F].realTimeInstant
-            processOpt <- repo.startProcessingUpdate(id, config.processorId, now)
+            processOpt <- persistence.startProcessingUpdate(id, config.processorId, now)
+            status = processOpt
+              .fold[ProcessStatus](ProcessStatus.NotStarted) { p =>
+                processStatus(config.maxProcessingTime, now)(p)
+              }
+            sample <- nextStep(status)
+          } yield sample
+        }
+
+        Clock[F].realTimeInstant.flatMap(now => doIt(now, 0, pollStrategy.initialDelay))
+      }
+
+      override def memoizedTryStartProcess[A](id: ID)(implicit
+          memoizedEncoder: MemoizedEncoder[A, MemoizedFormat],
+          memoizedDecoder: MemoizedDecoder[A, MemoizedFormat]
+      ): F[MemoizedOutcome[F, A]] = {
+        val pollStrategy = config.pollStrategy
+
+        def doIt(
+            startedAt: Instant,
+            pollNo: Int,
+            pollDelay: FiniteDuration
+        ): F[MemoizedOutcome[F, A]] = {
+
+          def logContext =
+            s"processorId=${config.processorId}, id=${id}, startedAt=${startedAt}, pollNo=${pollNo}"
+
+          def nextStep(ps: ProcessStatus): F[MemoizedOutcome[F, A]] = ps match {
+            case ProcessStatus.Running =>
+              val totalDurationF = Clock[F].realTimeInstant
+                .map(now => (now.toEpochMilli - startedAt.toEpochMilli).milliseconds)
+
+              val stopRetry = logger.warn(
+                s"Process still running, stop retry-ing ${logContext}"
+              ) >> Sync[F].raiseError[MemoizedOutcome[F, A]](
+                MnemosyneError.Timeout(s"Stop polling after ${pollNo} polls")
+              )
+
+              val retry = logger.debug(
+                s"Process still running, retry-ing ${logContext}"
+              ) >>
+                Temporal[F].sleep(pollDelay) >>
+                doIt(
+                  startedAt,
+                  pollNo + 1,
+                  config.pollStrategy.nextDelay(pollNo, pollDelay)
+                )
+
+              // retry until it is either Completed or Timeout
+              totalDurationF
+                .map(td => td >= pollStrategy.maxPollDuration)
+                .ifM(stopRetry, retry)
+
+            case ProcessStatus.NotStarted | ProcessStatus.Timeout | ProcessStatus.Expired =>
+              logger
+                .debug(
+                  s"Process status is ${ps}, starting now ${logContext}"
+                )
+                .as {
+                  MemoizedOutcome.New((a: A) =>
+                    Clock[F].realTimeInstant.flatMap { now =>
+                      persistence
+                        .completeProcessWithMemoization(id, config.processorId, now, config.ttl, a)
+                        .flatTap { _ =>
+                          logger.debug(
+                            s"Process marked as completed ${logContext}"
+                          )
+                        }
+                    }
+                  )
+                }
+                .widen[MemoizedOutcome[F, A]]
+
+            case ProcessStatus.Completed =>
+              logger
+                .debug(
+                  s"Process is duplicated processorId=${config.processorId}, id=${id}, startedAt=${startedAt}"
+                )
+                .as {
+                  val value = persistence.getMemoizedValue(id, config.processorId);
+                  MemoizedOutcome.Duplicate(value)
+                }
+          }
+
+          for {
+            now <- Clock[F].realTimeInstant
+            processOpt <- persistence.startProcessingUpdate(id, config.processorId, now)
             status = processOpt
               .fold[ProcessStatus](ProcessStatus.NotStarted) { p =>
                 processStatus(config.maxProcessingTime, now)(p)
@@ -215,7 +311,7 @@ object Mnemosyne {
       }
 
       override def invalidate(id: ID): F[Unit] = {
-        repo.invalidateProcess(id, config.processorId).flatTap { _ =>
+        persistence.invalidateProcess(id, config.processorId).flatTap { _ =>
           logger.debug(
             s"Process invalidated processorId=${config.processorId}, id=$id"
           )
