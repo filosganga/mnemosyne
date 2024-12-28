@@ -24,7 +24,11 @@ import scala.jdk.CollectionConverters.*
 import cats.effect.*
 import cats.implicits.*
 
-import software.amazon.awssdk.services.dynamodb.model.{AttributeValue, GetItemRequest, PutItemRequest}
+import software.amazon.awssdk.services.dynamodb.model.{
+  AttributeValue,
+  GetItemRequest,
+  PutItemRequest
+}
 import software.amazon.awssdk.services.dynamodb.{model as _, *}
 
 import munit.*
@@ -33,9 +37,6 @@ import org.scalacheck.Arbitrary
 import dynamodb.{DynamoDbConfig, DynamoDbPersistence}
 import dynamodb.DynamoDbPersistence.*
 import TestUtils.*
-
-// import com.filippodeluca.mnemosyne.dynamodb.DynamoDbDecoder.*;
-// import com.filippodeluca.mnemosyne.dynamodb.DynamoDbEncoder.*;
 
 class DynamoDbProcessRepoSuite extends CatsEffectSuite {
 
