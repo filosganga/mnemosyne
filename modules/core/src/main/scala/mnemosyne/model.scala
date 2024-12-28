@@ -18,6 +18,19 @@ package com.filippodeluca.mnemosyne.model
 
 import java.time.Instant
 
+sealed trait MnemosyneError extends Throwable {
+  def message: String
+  def cause: Option[Throwable]
+}
+
+object MnemosyneError {
+  case class Timeout(message: String, cause: Option[Throwable] = None) extends MnemosyneError
+  case class MemoizedEncodingError(message: String, cause: Option[Throwable] = None)
+      extends MnemosyneError
+  case class MemoizedDecodingError(message: String, cause: Option[Throwable] = None)
+      extends MnemosyneError
+}
+
 /** The outcome of starting a process.
   *
   * It should be either New or Duplicate. The New has a markAsComplete member that should be used to
@@ -25,8 +38,27 @@ import java.time.Instant
   */
 sealed trait Outcome[F[_]]
 object Outcome {
+  case class New[F[_]](
+      completeProcess: F[Unit]
+  ) extends Outcome[F]
+
   case class Duplicate[F[_]]() extends Outcome[F]
-  case class New[F[_]](markAsComplete: F[Unit]) extends Outcome[F]
+}
+
+/** The outcome of starting a process.
+  *
+  * It should be either New or Duplicate. The New has a markAsComplete member that should be used to
+  * mark the process as complete after it has succeeded
+  */
+sealed trait MemoizedOutcome[F[_], A]
+object MemoizedOutcome {
+  case class New[F[_], A](
+      completeProcess: A => F[Unit]
+  ) extends MemoizedOutcome[F, A]
+
+  case class Duplicate[F[_], A](
+      value: F[Option[A]]
+  ) extends MemoizedOutcome[F, A]
 }
 
 sealed trait ProcessStatus

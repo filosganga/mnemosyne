@@ -5,7 +5,7 @@ provider "aws" {
 
 # Table
 resource "aws_dynamodb_table" "deduplication-table" {
-  name           = "deduplication-table"
+  name           = "mnemosyne-table"
   hash_key       = "id"
   range_key      = "processorId"
   
