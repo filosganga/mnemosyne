@@ -23,15 +23,19 @@ import Config.*
 
 /** Configure the library
   *
-  * The [[PollStrategy]] controls the polling for waiting for a started process to complete or
-  * timeout. For this reason is important for the pollStrategy.maxPollDuration to be >
-  * maxProcessingTime otherwise the poll will always timeout in case of a stale process.
-  *
   * @param tableName
+  *   The name of the table where the processes are stored
   * @param processorId
+  *   The id of the processor that is starting the process
   * @param maxProcessingTime
+  *   The maximum time that a process can take to complete
   * @param ttl
+  *   The time to live of the process. If the process is not completed within this time it will be
+  *   marked as expired
   * @param pollStrategy
+  *   Control the polling for waiting for a started process to complete or timeout. For this reason
+  *   is important for the pollStrategy.maxPollDuration to be > maxProcessingTime otherwise the poll
+  *   will always timeout in case of a stale process.
   */
 case class Config[ProcessorId](
     processorId: ProcessorId,

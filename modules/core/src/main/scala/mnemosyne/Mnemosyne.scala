@@ -65,19 +65,19 @@ trait Mnemosyne[F[_], Id, ProcessorId] {
 
   /** Do the best effort to ensure a process to be successfully executed only once.
     *
-    * If the process has already runned successfully before, it will run the [[ifDuplicate]].
-    * Otherwise, it will run the [[ifNew]].
+    * If the process has already runned successfully before, it will run the ifDuplicate. Otherwise,
+    * it will run the ifNew.
     *
-    * The return value is either the result of [[ifNew]] or [[ifDuplicate]].
+    * The return value is either the result of ifNew or ifDuplicate.
     *
     * @param id
-    *   The id of the process to run.
+    *   The id of the process to protect
     * @param ifNew
     *   The effect to run if the process is new.
     * @param ifDuplicate
-    *   The effect to run if the process is duplicate.
+    *   The effect to run if the process is a duplicate.
     * @return
-    *   the result of [[ifNew]] or [[ifDuplicate]].
+    *   The result of the effect that was run.
     */
   final def protect[A](id: Id, ifNew: F[A], ifDuplicate: F[A])(implicit flatMap: FlatMap[F]): F[A] =
     tryStartProcess(id)
