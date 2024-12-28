@@ -164,11 +164,11 @@ class DynamoDbProcessRepoSuite extends CatsEffectSuite {
         )
         maybeItem <- resources.getItem(id, processorId)
       } yield {
-        val testee = for
+        val testee = for {
           item <- maybeItem
           m <- Option(item.m())
           memoized <- Option(m.get(DynamoDbPersistence.field.memoized))
-        yield memoized
+        } yield memoized
         assertEquals(testee, Some(AttributeValue.builder().s("memoized").build()), clue(maybeItem))
       }
     }
@@ -180,7 +180,6 @@ class DynamoDbProcessRepoSuite extends CatsEffectSuite {
       for {
         id <- a[UUID]
         processorId <- a[UUID]
-        now <- Clock[IO].realTimeInstant
         _ <- resources.putItem(
           AttributeValue
             .builder()
