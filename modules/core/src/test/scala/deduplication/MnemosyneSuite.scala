@@ -26,6 +26,7 @@ import cats.syntax.all.*
 
 import org.typelevel.log4cats.slf4j.Slf4jFactory
 import io.circe.Json
+import io.circe.syntax.*;
 
 import munit.*
 import org.scalacheck.Arbitrary
@@ -33,6 +34,7 @@ import org.scalacheck.Arbitrary
 import model.*
 import Config.*
 import memoization.*
+import cats.effect.kernel.Ref
 
 class DeduplicationSuite extends CatsEffectSuite {
 
@@ -86,44 +88,6 @@ class DeduplicationSuite extends CatsEffectSuite {
 
     def invalidateProcess(id: UUID, processorId: UUID): IO[Unit] =
       IO.unit
-  }
-
-  test(
-    "tryStartProcess should be sound"
-  ) {
-
-    val processId = a[UUID]
-    val processorId = a[UUID]
-
-    val mnemosyne = Mnemosyne[IO, UUID, UUID, Json](
-      new MockPersistence {
-        override def startProcessingUpdate(
-            id: UUID,
-            processorId: ju.UUID,
-            now: Instant
-        ): IO[Option[Process[UUID, UUID]]] = none[Process[UUID, UUID]].pure[IO]
-      },
-      Config(
-        processorId = processorId,
-        maxProcessingTime = 5.minutes,
-        ttl = 30.days.some,
-        pollStrategy = PollStrategy.linear()
-      ),
-      Slf4jFactory.create[IO]
-    )
-
-    val fa = IO("foo")
-
-    mnemosyne
-      .flatMap { mnemosyne =>
-        mnemosyne.memoizedTryStartProcess[String](processId)
-      }
-      .flatMap {
-        case d: MemoizedOutcome.Duplicate[IO, String] =>
-          d.value
-        case n: MemoizedOutcome.New[IO, String] =>
-          fa.flatTap(a => n.completeProcess(a))
-      }
   }
 
   test(
@@ -330,5 +294,336 @@ class DeduplicationSuite extends CatsEffectSuite {
       .map { outcome =>
         assert(outcome.isInstanceOf[Outcome.New[IO]], clue(outcome))
       }
+  }
+
+  test(
+    "memoizedTryStartProcess should return New when the process with the a ID has never started before"
+  ) {
+
+    val processId = a[UUID]
+    val processorId = a[UUID]
+
+    val mnemosyne = Mnemosyne[IO, UUID, UUID, Json](
+      new MockPersistence {
+        override def startProcessingUpdate(
+            id: UUID,
+            processorId: ju.UUID,
+            now: Instant
+        ): IO[Option[Process[UUID, UUID]]] = none[Process[UUID, UUID]].pure[IO]
+      },
+      Config(
+        processorId = processorId,
+        maxProcessingTime = 5.minutes,
+        ttl = 30.days.some,
+        pollStrategy = PollStrategy.linear()
+      ),
+      Slf4jFactory.create[IO]
+    )
+
+    mnemosyne
+      .flatMap { mnemosyne =>
+        mnemosyne.memoizedTryStartProcess[String](processId)
+      }
+      .map { outcome =>
+        assert(outcome.isInstanceOf[MemoizedOutcome.New[IO, String]], clue(outcome))
+      }
+  }
+
+  test(
+    "memoizedTryStartProcess should return Duplicate when the process with the a ID has already completed"
+  ) {
+
+    val processId = a[UUID]
+    val processorId = a[UUID]
+
+    val mnemosyne = Mnemosyne[IO, UUID, UUID, Json](
+      new MockPersistence {
+        override def startProcessingUpdate(
+            id: UUID,
+            processorId: ju.UUID,
+            now: Instant
+        ): IO[Option[Process[UUID, UUID]]] = {
+          IO.realTimeInstant.map { now =>
+            Process(
+              id = id,
+              processorId = processorId,
+              startedAt = now.minusMillis(750),
+              completedAt = now.minusMillis(250).some,
+              expiresOn = None
+            ).some
+          }
+        }
+      },
+      Config(
+        processorId = processorId,
+        maxProcessingTime = 5.minutes,
+        ttl = 30.days.some,
+        pollStrategy = PollStrategy.linear()
+      ),
+      Slf4jFactory.create[IO]
+    )
+
+    mnemosyne
+      .flatMap { mnemosyne =>
+        mnemosyne.memoizedTryStartProcess[String](processId)
+      }
+      .map { outcome =>
+        assert(clue(outcome).isInstanceOf[MemoizedOutcome.Duplicate[IO, String]])
+      }
+  }
+
+  test(
+    "memoizedTryStartProcess should return New when another process with the same Id has never completed and expired"
+  ) {
+
+    val processId = a[UUID]
+    val processorId = a[UUID]
+
+    val mnemosyne = Mnemosyne[IO, UUID, UUID, Json](
+      new MockPersistence {
+        override def startProcessingUpdate(
+            id: UUID,
+            processorId: ju.UUID,
+            now: Instant
+        ): IO[Option[Process[UUID, UUID]]] = {
+          IO.realTimeInstant.map { now =>
+            Process(
+              id = id,
+              processorId = processorId,
+              startedAt = now.minusMillis(750),
+              completedAt = None,
+              expiresOn = Expiration(now.minusMillis(250)).some
+            ).some
+          }
+        }
+      },
+      Config(
+        processorId = processorId,
+        maxProcessingTime = 5.minutes,
+        ttl = 30.days.some,
+        pollStrategy = PollStrategy.linear()
+      ),
+      Slf4jFactory.create[IO]
+    )
+
+    mnemosyne
+      .flatMap { mnemosyne =>
+        mnemosyne.memoizedTryStartProcess[String](processId)
+      }
+      .map { outcome =>
+        assert(clue(outcome).isInstanceOf[MemoizedOutcome.New[IO, String]])
+      }
+  }
+
+  test(
+    "memoizedTryStartProcess should return New when another process with the same Id has completed and expired"
+  ) {
+
+    val processId = a[UUID]
+    val processorId = a[UUID]
+
+    val mnemosyne = Mnemosyne[IO, UUID, UUID, Json](
+      new MockPersistence {
+        override def startProcessingUpdate(
+            id: UUID,
+            processorId: ju.UUID,
+            now: Instant
+        ): IO[Option[Process[UUID, UUID]]] = {
+          IO.realTimeInstant.map { now =>
+            Process(
+              id = id,
+              processorId = processorId,
+              startedAt = now.minusMillis(750),
+              completedAt = now.minusMillis(500).some,
+              expiresOn = Expiration(now.minusMillis(250)).some
+            ).some
+          }
+        }
+      },
+      Config(
+        processorId = processorId,
+        maxProcessingTime = 5.minutes,
+        ttl = 30.days.some,
+        pollStrategy = PollStrategy.linear()
+      ),
+      Slf4jFactory.create[IO]
+    )
+
+    mnemosyne
+      .flatMap { mnemosyne =>
+        mnemosyne.memoizedTryStartProcess[String](processId)
+      }
+      .map { outcome =>
+        assert(clue(outcome).isInstanceOf[MemoizedOutcome.New[IO, String]])
+      }
+  }
+
+  test(
+    "memoizedTryStartProcess should return New when another process with the same Id has timeout"
+  ) {
+
+    val processId = a[UUID]
+    val processorId = a[UUID]
+
+    val mnemosyne = Mnemosyne[IO, UUID, UUID, Json](
+      new MockPersistence {
+        override def startProcessingUpdate(
+            id: UUID,
+            processorId: ju.UUID,
+            now: Instant
+        ): IO[Option[Process[UUID, UUID]]] = {
+          IO.realTimeInstant.map { now =>
+            Process(
+              id = id,
+              processorId = processorId,
+              startedAt = now.minusSeconds(300),
+              completedAt = None,
+              expiresOn = None
+            ).some
+          }
+        }
+      },
+      Config(
+        processorId = processorId,
+        maxProcessingTime = 100.seconds,
+        ttl = 30.days.some,
+        pollStrategy = PollStrategy.linear()
+      ),
+      Slf4jFactory.create[IO]
+    )
+
+    mnemosyne
+      .flatMap { mnemosyne =>
+        mnemosyne.memoizedTryStartProcess[String](processId)
+      }
+      .map { outcome =>
+        assert(clue(outcome).isInstanceOf[MemoizedOutcome.New[IO, String]])
+      }
+  }
+
+  test(
+    "memoizedTryStartProcess should return New that allow to store the memoized value"
+  ) {
+
+    val processId = a[UUID]
+    val processorId = a[UUID]
+
+    Ref[IO].of(none[Json]).flatMap { memoizedRef =>
+
+      val mnemosyne = Mnemosyne[IO, UUID, UUID, Json](
+        new MockPersistence {
+          override def startProcessingUpdate(
+              id: UUID,
+              processorId: ju.UUID,
+              now: Instant
+          ): IO[Option[Process[UUID, UUID]]] = {
+            IO.realTimeInstant.map { now =>
+              Process(
+                id = id,
+                processorId = processorId,
+                startedAt = now.minusSeconds(300),
+                completedAt = None,
+                expiresOn = None
+              ).some
+            }
+          }
+
+          override def completeProcessWithMemoization[A](
+              id: UUID,
+              processorId: UUID,
+              now: Instant,
+              ttl: Option[FiniteDuration],
+              memoized: A
+          )(implicit memoizedEncoder: MemoizedEncoder[A, Json]): IO[Unit] = {
+            IO.fromEither(memoizedEncoder.encodeMemoized(memoized)).flatMap { memoizedJson =>
+              memoizedRef.set(memoizedJson.some)
+            }
+          }
+        },
+        Config(
+          processorId = processorId,
+          maxProcessingTime = 100.seconds,
+          ttl = 30.days.some,
+          pollStrategy = PollStrategy.linear()
+        ),
+        Slf4jFactory.create[IO]
+      )
+
+      mnemosyne
+        .flatMap { mnemosyne =>
+          mnemosyne.memoizedTryStartProcess[String](processId)
+        }
+        .flatMap { outcome =>
+          outcome
+            .fold(newOutcome => newOutcome.completeProcess("memoized"))(duplicateOutcome => IO.unit)
+        }
+        .flatMap(_ => memoizedRef.get)
+        .map { memoized =>
+          assertEquals(memoized, "memoized".asJson.some)
+        }
+    }
+  }
+
+  test(
+    "memoizedTryStartProcess should return Duplicate that contains the memoized value"
+  ) {
+
+    val processId = a[UUID]
+    val processorId = a[UUID]
+
+    Ref[IO].of(none[Json]).flatMap { memoizedRef =>
+
+      val mnemosyne = Mnemosyne[IO, UUID, UUID, Json](
+        new MockPersistence {
+          override def startProcessingUpdate(
+              id: UUID,
+              processorId: ju.UUID,
+              now: Instant
+          ): IO[Option[Process[UUID, UUID]]] = {
+            IO.realTimeInstant.map { now =>
+              Process(
+                id = id,
+                processorId = processorId,
+                startedAt = now.minusSeconds(300),
+                completedAt = None,
+                expiresOn = None
+              ).some
+            }
+          }
+
+          override def completeProcessWithMemoization[A](
+              id: UUID,
+              processorId: UUID,
+              now: Instant,
+              ttl: Option[FiniteDuration],
+              memoized: A
+          )(implicit memoizedEncoder: MemoizedEncoder[A, Json]): IO[Unit] = {
+            IO.fromEither(memoizedEncoder.encodeMemoized(memoized)).flatMap { memoizedJson =>
+              memoizedRef.set(memoizedJson.some)
+            }
+          }
+        },
+        Config(
+          processorId = processorId,
+          maxProcessingTime = 100.seconds,
+          ttl = 30.days.some,
+          pollStrategy = PollStrategy.linear()
+        ),
+        Slf4jFactory.create[IO]
+      )
+
+      mnemosyne
+        .flatMap { mnemosyne =>
+          mnemosyne.memoizedTryStartProcess[String](processId)
+        }
+        .flatMap { outcome =>
+          outcome
+            .fold(newOutcome => newOutcome.completeProcess("memoized"))(duplicateOutcome => IO.unit)
+        }
+        .flatMap(_ => memoizedRef.get)
+        .map { memoized =>
+          assertEquals(memoized, "memoized".asJson.some)
+        }
+    }
   }
 }
