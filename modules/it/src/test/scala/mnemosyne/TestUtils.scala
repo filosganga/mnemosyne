@@ -16,21 +16,20 @@
 
 package com.filippodeluca.mnemosyne
 
-import scala.jdk.CollectionConverters._
-import scala.util.control.NonFatal
-import scala.concurrent.duration._
-
-import java.util.UUID
-
-import cats._
-import cats.effect._
-import cats.implicits._
-
-import software.amazon.awssdk.services.dynamodb.model._
-import software.amazon.awssdk.services.dynamodb.{model => _, _}
-
-import com.filippodeluca.mnemosyne.dynamodb._
 import java.net.URI
+import java.util.UUID
+import scala.concurrent.duration.*
+import scala.jdk.CollectionConverters.*
+import scala.util.control.NonFatal
+
+import cats.*
+import cats.effect.*
+import cats.implicits.*
+
+import software.amazon.awssdk.services.dynamodb.model.*
+import software.amazon.awssdk.services.dynamodb.{model as _, *}
+
+import dynamodb.*
 
 package object TestUtils {
 

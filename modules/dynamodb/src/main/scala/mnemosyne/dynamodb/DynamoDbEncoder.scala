@@ -18,12 +18,12 @@ package com.filippodeluca.mnemosyne
 package dynamodb
 
 import java.time.Instant
-import java.{util => ju}
+import java.util as ju
 
 import cats.*
 import cats.syntax.all.*
 
-import software.amazon.awssdk.services.dynamodb.model._
+import software.amazon.awssdk.services.dynamodb.model.*
 
 trait DynamoDbEncoder[A] {
   def write(a: A): AttributeValue

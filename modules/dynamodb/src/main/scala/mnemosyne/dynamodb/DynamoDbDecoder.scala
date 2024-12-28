@@ -18,14 +18,14 @@ package com.filippodeluca.mnemosyne
 package dynamodb
 
 import java.time.Instant
-import java.{util => ju}
+import java.util as ju
 import scala.annotation.tailrec
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 import cats.*
 import cats.syntax.all.*
 
-import software.amazon.awssdk.services.dynamodb.model._
+import software.amazon.awssdk.services.dynamodb.model.*
 
 case class DecoderFailure(message: String, cause: Option[Throwable] = None)
     extends RuntimeException(message, cause.getOrElse(null))

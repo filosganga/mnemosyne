@@ -16,24 +16,22 @@
 
 package com.filippodeluca.mnemosyne
 
-import java.util.UUID
 import java.time.Instant
-import scala.jdk.CollectionConverters._
+import java.time.temporal.ChronoUnit
+import java.util.UUID
+import scala.jdk.CollectionConverters.*
 
-import cats.effect._
-import cats.implicits._
+import cats.effect.*
+import cats.implicits.*
 
-import munit._
+import software.amazon.awssdk.services.dynamodb.model.{AttributeValue, GetItemRequest}
+import software.amazon.awssdk.services.dynamodb.{model as _, *}
+
+import munit.*
 import org.scalacheck.Arbitrary
 
-import software.amazon.awssdk.services.dynamodb.{model => _, _}
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue
-import software.amazon.awssdk.services.dynamodb.model.GetItemRequest
-
-import com.filippodeluca.mnemosyne.TestUtils._
-import com.filippodeluca.mnemosyne.dynamodb.DynamoDbConfig
-import com.filippodeluca.mnemosyne.dynamodb.DynamoDbPersistence
-import java.time.temporal.ChronoUnit
+import dynamodb.{DynamoDbConfig, DynamoDbPersistence}
+import TestUtils.*
 
 class DynamoDbProcessRepoSuite extends CatsEffectSuite {
 

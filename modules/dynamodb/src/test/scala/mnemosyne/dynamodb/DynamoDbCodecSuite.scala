@@ -18,15 +18,15 @@ package com.filippodeluca.mnemosyne
 package dynamodb
 
 import java.time.Instant
-import java.{util => ju}
+import java.util as ju
 import scala.reflect.ClassTag
 
-import software.amazon.awssdk.services.dynamodb.model._
+import software.amazon.awssdk.services.dynamodb.model.*
 
 import org.scalacheck.Arbitrary
-import org.scalacheck.Prop._
+import org.scalacheck.Prop.*
 
-import Generators._
+import Generators.*
 
 class DynamoDbCodecSuite extends munit.ScalaCheckSuite {
 

@@ -17,19 +17,20 @@
 package com.filippodeluca.mnemosyne
 
 import java.time.Instant
+import java.util as ju
 import java.util.UUID
-import java.{util => ju}
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 import cats.effect.IO
 import cats.syntax.all.*
+
+import org.typelevel.log4cats.slf4j.Slf4jFactory
 
 import munit.*
 import org.scalacheck.Arbitrary
 
 import model.*
 import Config.*
-import org.typelevel.log4cats.slf4j.Slf4jFactory
 
 class DeduplicationSuite extends CatsEffectSuite {
 

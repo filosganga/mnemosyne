@@ -17,7 +17,7 @@
 package com.filippodeluca.mnemosyne
 
 import java.time.Instant
-import java.{util => ju}
+import java.util as ju
 import scala.concurrent.duration.*
 
 import cats.implicits.*

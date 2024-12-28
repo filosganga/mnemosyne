@@ -18,22 +18,19 @@ package com.filippodeluca.mnemosyne
 
 import java.util.UUID
 import java.util.concurrent.TimeoutException
+import scala.concurrent.duration.*
 
-import scala.concurrent.duration._
+import cats.effect.{IO, Ref, Resource}
+import cats.implicits.*
 
-import cats.implicits._
+import org.typelevel.log4cats.slf4j.Slf4jFactory
 
-import munit._
-
-import model._
+import munit.*
 import org.scalacheck.Arbitrary
 
-import com.filippodeluca.mnemosyne.TestUtils._
-import cats.effect.kernel.Resource
-import cats.effect.IO
-import cats.effect.kernel.Ref
-import Config._
-import org.typelevel.log4cats.slf4j.Slf4jFactory
+import TestUtils.*
+import model.*
+import Config.*
 
 class MnemosyneSuite extends CatsEffectSuite {
 

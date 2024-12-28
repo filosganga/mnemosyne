@@ -19,8 +19,8 @@ package com.filippodeluca.mnemosyne
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
-import org.scalacheck.Arbitrary.*
 import org.scalacheck.*
+import org.scalacheck.Arbitrary.*
 
 import model.*
 

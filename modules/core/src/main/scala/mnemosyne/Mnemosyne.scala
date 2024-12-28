@@ -18,15 +18,16 @@ package com.filippodeluca.mnemosyne
 
 import java.time.Instant
 import java.util.concurrent.TimeoutException
-import scala.jdk.DurationConverters.*
 import scala.concurrent.duration.*
+import scala.jdk.DurationConverters.*
 
 import cats.FlatMap
 import cats.effect.{Async, Clock, Sync, Temporal}
 import cats.syntax.all.*
 
-import model.*
 import org.typelevel.log4cats.LoggerFactory
+
+import model.*
 
 trait Mnemosyne[F[_], Id, ProcessorId] {
 
