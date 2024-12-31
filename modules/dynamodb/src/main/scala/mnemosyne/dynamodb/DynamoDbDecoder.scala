@@ -79,6 +79,13 @@ object DynamoDbDecoder {
   implicit val dynamoDecoderForAttributeValue: DynamoDbDecoder[AttributeValue] =
     DynamoDbDecoder.instance(av => av.asRight[DecoderFailure])
 
+  implicit val dynamoDecoderForUnit: DynamoDbDecoder[Unit] = DynamoDbDecoder.instance { av =>
+    Option(av.nul())
+      .filter(nul => nul.booleanValue())
+      .void
+      .toRight(new DecoderFailure(s"The attribute value must be an NUL"))
+  }
+
   implicit def dynamoDecoderForOption[A: DynamoDbDecoder]: DynamoDbDecoder[Option[A]] =
     DynamoDbDecoder.instance { av =>
       if (Option(av.nul()).map(_.booleanValue()).getOrElse(false)) {
