@@ -22,6 +22,7 @@ import scala.concurrent.duration.FiniteDuration
 import scala.jdk.CollectionConverters.*
 import scala.jdk.DurationConverters.*
 
+import cats.data.NonEmptyList
 import cats.effect.*
 import cats.syntax.all.*
 
@@ -57,13 +58,17 @@ object DynamoDbPersistence {
     val startedAt = "startedAt"
     val completedAt = "completedAt"
     val expiresOn = "expiresOn"
+    val memoized = "memoized"
   }
 
-  def resource[F[
-      _
-  ]: Async, ID: DynamoDbDecoder: DynamoDbEncoder, ProcessorID: DynamoDbDecoder: DynamoDbEncoder](
+  def resource[
+      F[_]: Async,
+      Id: DynamoDbDecoder: DynamoDbEncoder,
+      ProcessorId: DynamoDbDecoder: DynamoDbEncoder,
+      Memoized: DynamoDbEncoder: DynamoDbDecoder
+  ](
       config: DynamoDbConfig
-  ): Resource[F, Persistence[F, ID, ProcessorID]] = {
+  ): Resource[F, Persistence[F, Id, ProcessorId, Memoized]] = {
     Resource
       .make(Sync[F].delay(config.modifyClientBuilder(DynamoDbAsyncClient.builder()).build())) {
         client =>
@@ -72,12 +77,18 @@ object DynamoDbPersistence {
       .map(client => apply(config, client))
   }
 
-  def apply[F[
-      _
-  ]: Async, ID: DynamoDbDecoder: DynamoDbEncoder, ProcessorID: DynamoDbDecoder: DynamoDbEncoder](
+  def apply[F[_], Id, ProcessorId, Memoized](
       config: DynamoDbConfig,
       client: DynamoDbAsyncClient
-  ): Persistence[F, ID, ProcessorID] = {
+  )(implicit
+      F: Async[F],
+      idEncoder: DynamoDbEncoder[Id],
+      idDecoder: DynamoDbDecoder[Id],
+      procEncoder: DynamoDbEncoder[ProcessorId],
+      procDecoder: DynamoDbDecoder[ProcessorId],
+      memoizedEncoder: DynamoDbEncoder[Memoized],
+      memoizedDecoder: DynamoDbDecoder[Memoized]
+  ): Persistence[F, Id, ProcessorId, Memoized] = {
 
     def update(request: UpdateItemRequest) = {
       Async[F].fromCompletableFuture(Sync[F].delay(client.updateItem(request)))
@@ -89,28 +100,30 @@ object DynamoDbPersistence {
 
     def readProcess(
         attributes: AttributeValue
-    ): Either[DecoderFailure, Process[ID, ProcessorID]] =
+    ): Either[DecoderFailure, Process[Id, ProcessorId, Memoized]] =
       for {
-        id <- attributes.get[ID](field.id)
-        processorId <- attributes.get[ProcessorID](field.processorId)
+        id <- attributes.get[Id](field.id)
+        processorId <- attributes.get[ProcessorId](field.processorId)
         startedAt <- attributes.get[Instant](field.startedAt)
         completedAt <- attributes.get[Option[Instant]](field.completedAt)
         expiresOn <- attributes.get[Option[Expiration]](field.expiresOn)
+        memoized <- attributes.get[Option[Memoized]](field.memoized)
       } yield Process(
         id,
         processorId,
         startedAt,
         completedAt,
-        expiresOn
+        expiresOn,
+        memoized
       )
 
-    new Persistence[F, ID, ProcessorID] {
+    new Persistence[F, Id, ProcessorId, Memoized] {
 
       def startProcessingUpdate(
-          id: ID,
-          processorId: ProcessorID,
+          id: Id,
+          processorId: ProcessorId,
           now: Instant
-      ): F[Option[Process[ID, ProcessorID]]] = {
+      ): F[Option[Process[Id, ProcessorId, Memoized]]] = {
 
         val startedAtVar = ":startedAt"
 
@@ -119,8 +132,8 @@ object DynamoDbPersistence {
           .tableName(config.tableName.value)
           .key(
             Map(
-              field.id -> DynamoDbEncoder[ID].write(id),
-              field.processorId -> DynamoDbEncoder[ProcessorID].write(processorId)
+              field.id -> DynamoDbEncoder[Id].write(id),
+              field.processorId -> DynamoDbEncoder[ProcessorId].write(processorId)
             ).asJava
           )
           .updateExpression(
@@ -143,15 +156,33 @@ object DynamoDbPersistence {
       }
 
       def completeProcess(
-          id: ID,
-          processorId: ProcessorID,
+          id: Id,
+          processorId: ProcessorId,
           now: Instant,
-          ttl: Option[FiniteDuration]
+          ttl: Option[FiniteDuration],
+          value: Memoized
       ): F[Unit] = {
+
         val completedAtVar = ":completedAt"
         val expiresOnVar = ":expiresOn"
-        val updateExpression = s"SET ${field.completedAt}=$completedAtVar" + ttl.fold("")(_ =>
-          s", ${field.expiresOn}=$expiresOnVar"
+        val memoizedVar = ":memoized"
+
+        val updateExpression = (NonEmptyList.of(
+          s"${field.completedAt}=$completedAtVar",
+          s"${field.memoized}=$memoizedVar"
+        ) ++ ttl.toList.map(_ => s"${field.expiresOn}=$expiresOnVar")).mkString_("SET ", ", ", "")
+
+        val expressionAttributeValues = Map(
+          completedAtVar -> AttributeValue
+            .builder()
+            .n(now.toEpochMilli.toString)
+            .build(),
+          memoizedVar -> memoizedEncoder.write(value)
+        ) ++ ttl.map(ttl =>
+          expiresOnVar -> AttributeValue
+            .builder()
+            .n(now.plus(ttl.toJava).getEpochSecond.toString)
+            .build()
         )
 
         val request = UpdateItemRequest
@@ -159,38 +190,26 @@ object DynamoDbPersistence {
           .tableName(config.tableName.value)
           .key(
             Map(
-              field.id -> DynamoDbEncoder[ID].write(id),
-              field.processorId -> DynamoDbEncoder[ProcessorID].write(processorId)
+              field.id -> DynamoDbEncoder[Id].write(id),
+              field.processorId -> DynamoDbEncoder[ProcessorId].write(processorId)
             ).asJava
           )
           .updateExpression(updateExpression)
-          .expressionAttributeValues(
-            (Map(
-              completedAtVar -> AttributeValue
-                .builder()
-                .n(now.toEpochMilli.toString)
-                .build()
-            ) ++ ttl.map(ttl =>
-              expiresOnVar -> AttributeValue
-                .builder()
-                .n(now.plus(ttl.toJava).getEpochSecond.toString)
-                .build()
-            )).asJava
-          )
+          .expressionAttributeValues(expressionAttributeValues.asJava)
           .returnValues(ReturnValue.NONE)
           .build()
 
         update(request).void
       }
 
-      def invalidateProcess(id: ID, processorId: ProcessorID): F[Unit] = {
+      def invalidateProcess(id: Id, processorId: ProcessorId): F[Unit] = {
         val request = DeleteItemRequest
           .builder()
           .tableName(config.tableName.value)
           .key(
             Map(
-              field.id -> DynamoDbEncoder[ID].write(id),
-              field.processorId -> DynamoDbEncoder[ProcessorID].write(processorId)
+              field.id -> DynamoDbEncoder[Id].write(id),
+              field.processorId -> DynamoDbEncoder[ProcessorId].write(processorId)
             ).asJava
           )
           .returnValues(ReturnValue.NONE)
