@@ -33,12 +33,13 @@ import dynamodb.*
 
 package object TestUtils {
 
-  def persistenceResource[F[_]: Async]: Resource[F, Persistence[F, UUID, UUID]] =
+  def persistenceResource[F[_]: Async, A: DynamoDbDecoder: DynamoDbEncoder]
+      : Resource[F, Persistence[F, UUID, UUID, A]] =
     for {
       dynamoclient <- dynamoClientResource[F]
       tableName <- Resource.eval(randomTableName)
       table <- tableResource[F](dynamoclient, tableName)
-    } yield DynamoDbPersistence[F, UUID, UUID](
+    } yield DynamoDbPersistence[F, UUID, UUID, A](
       DynamoDbConfig(DynamoDbConfig.TableName(table)),
       dynamoclient
     )

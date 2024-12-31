@@ -34,7 +34,8 @@ object Generators {
     instant <- arbitrary[Instant]
   } yield Expiration(instant)
 
-  implicit def genForProcess[Id: Arbitrary, ProcessorId: Arbitrary]: Gen[Process[Id, ProcessorId]] =
+  implicit def genForProcess[Id: Arbitrary, ProcessorId: Arbitrary, A: Arbitrary]
+      : Gen[Process[Id, ProcessorId, A]] =
     for {
       id <- arbitrary[Id]
       processorId <- arbitrary[ProcessorId]
@@ -43,20 +44,22 @@ object Generators {
       expiresOn <- Gen.option(
         Gen.choose(7L, 90L).map(n => startedAt.plus(n, ChronoUnit.DAYS)).map(Expiration(_))
       )
-    } yield Process[Id, ProcessorId](
+      memoized <- arbitrary[Option[A]]
+    } yield Process[Id, ProcessorId, A](
       id = id,
       processorId = processorId,
       startedAt = startedAt,
       completedAt = completedAt,
-      expiresOn = expiresOn
+      expiresOn = expiresOn,
+      memoized = memoized
     )
 
-  implicit def genForProcessStatus: Gen[ProcessStatus] = Gen.oneOf(
-    ProcessStatus.Completed,
-    ProcessStatus.Expired,
-    ProcessStatus.NotStarted,
-    ProcessStatus.Running,
-    ProcessStatus.Timeout
+  implicit def genForProcessStatus[A: Arbitrary]: Gen[ProcessStatus] = Gen.oneOf(
+    arbitrary[A].map(a => ProcessStatus.Completed(a)),
+    Gen.const(ProcessStatus.Expired),
+    Gen.const(ProcessStatus.NotStarted),
+    Gen.const(ProcessStatus.Running),
+    Gen.const(ProcessStatus.Timeout)
   )
 
   implicit def arbForGen[A](implicit gen: Gen[A]): Arbitrary[A] = Arbitrary(gen)
