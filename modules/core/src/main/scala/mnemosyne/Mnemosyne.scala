@@ -21,15 +21,15 @@ import java.util.concurrent.TimeoutException
 import scala.concurrent.duration.*
 import scala.jdk.DurationConverters.*
 
-import cats.FlatMap
 import cats.effect.{Async, Clock, Sync, Temporal}
 import cats.syntax.all.*
+import cats.{Monad, Show}
 
 import org.typelevel.log4cats.LoggerFactory
 
 import model.*
 
-trait Mnemosyne[F[_], Id, ProcessorId] {
+trait Mnemosyne[F[_], Id, ProcessorId, Memoized] {
 
   /** Try to start a process.
     *
@@ -61,7 +61,7 @@ trait Mnemosyne[F[_], Id, ProcessorId] {
     *   An Outcome.New or Outcome.Duplicate. The Outcome.New will contain an effect to complete the
     *   just started process.
     */
-  def tryStartProcess(id: Id): F[Outcome[F]]
+  def tryStartProcess(id: Id): F[Outcome[F, Memoized]]
 
   /** Do the best effort to ensure a process to be successfully executed only once.
     *
@@ -79,13 +79,13 @@ trait Mnemosyne[F[_], Id, ProcessorId] {
     * @return
     *   The result of the effect that was run.
     */
-  final def protect[A](id: Id, ifNew: F[A], ifDuplicate: F[A])(implicit flatMap: FlatMap[F]): F[A] =
+  final def protect(id: Id, fa: F[Memoized])(implicit flatMap: Monad[F]): F[Memoized] =
     tryStartProcess(id)
       .flatMap {
         case Outcome.New(markAsComplete) =>
-          ifNew.flatTap(_ => markAsComplete)
-        case Outcome.Duplicate() =>
-          ifDuplicate
+          fa.flatTap(a => markAsComplete(a))
+        case Outcome.Duplicate(a) =>
+          a.pure[F]
       }
 
   /** Invalidate a process.
@@ -102,66 +102,72 @@ trait Mnemosyne[F[_], Id, ProcessorId] {
 
 object Mnemosyne {
 
-  def processStatus(
-      maxProcessingTime: FiniteDuration,
-      now: Instant
-  )(p: Process[?, ?]): ProcessStatus = {
-
-    val isCompleted =
-      p.completedAt.isDefined
-
-    val isExpired = p.expiresOn
-      .map(_.instant)
-      .exists(_.isBefore(now))
-
-    val isTimeout = p.startedAt
-      .plus(maxProcessingTime.toJava)
-      .isBefore(now)
-
-    if (isExpired) {
-      ProcessStatus.Expired
-    } else if (isCompleted) {
-      ProcessStatus.Completed
-    } else if (isTimeout) {
-      ProcessStatus.Timeout
-    } else {
-      ProcessStatus.Running
-    }
-  }
-
-  def apply[F[_]: Async, ID, ProcessorID](
-      repo: Persistence[F, ID, ProcessorID],
+  def apply[F[_]: Async, ID: Show, ProcessorID: Show, Memoized](
+      repo: Persistence[F, ID, ProcessorID, Memoized],
       config: Config[ProcessorID],
       loggerFactory: LoggerFactory[F]
-  ): F[Mnemosyne[F, ID, ProcessorID]] = loggerFactory.create.map { logger =>
-    new Mnemosyne[F, ID, ProcessorID] {
+  ): F[Mnemosyne[F, ID, ProcessorID, Memoized]] = loggerFactory.create.map { loggerTemplate =>
 
-      override def tryStartProcess(id: ID): F[Outcome[F]] = {
+    val logger = loggerTemplate.addContext(Map("mnemosyne.processorId" -> config.processorId.show))
+
+    new Mnemosyne[F, ID, ProcessorID, Memoized] {
+
+      override def tryStartProcess(id: ID): F[Outcome[F, Memoized]] = {
 
         val pollStrategy = config.pollStrategy
+
+        def processStatus(
+            maxProcessingTime: FiniteDuration,
+            now: Instant
+        )(p: Process[ID, ProcessorID, Memoized]): ProcessStatus = {
+
+          val isCompleted =
+            p.completedAt.isDefined
+
+          val isExpired = p.expiresOn
+            .map(_.instant)
+            .exists(_.isBefore(now))
+
+          val isTimeout = p.startedAt
+            .plus(maxProcessingTime.toJava)
+            .isBefore(now)
+
+          if (isExpired) {
+            ProcessStatus.Expired
+          } else if (isCompleted) {
+            ProcessStatus.Completed(p.memoized.get)
+          } else if (isTimeout) {
+            ProcessStatus.Timeout
+          } else {
+            ProcessStatus.Running
+          }
+        }
 
         def doIt(
             startedAt: Instant,
             pollNo: Int,
             pollDelay: FiniteDuration
-        ): F[Outcome[F]] = {
+        ): F[Outcome[F, Memoized]] = {
 
-          def logContext =
-            s"processorId=${config.processorId}, id=${id}, startedAt=${startedAt}, pollNo=${pollNo}"
+          val doItlogger = logger.addContext(
+            Map(
+              "mnemosyne.id" -> id.show,
+              "mnemosyne.startedAt" -> startedAt.toString,
+              "mnemosyne.pollNo" -> pollNo.toString
+            )
+          )
 
-          def nextStep(ps: ProcessStatus): F[Outcome[F]] = ps match {
+          def nextStep(ps: ProcessStatus): F[Outcome[F, Memoized]] = ps match {
             case ProcessStatus.Running =>
               val totalDurationF = Clock[F].realTimeInstant
                 .map(now => (now.toEpochMilli - startedAt.toEpochMilli).milliseconds)
 
-              val stopRetry = logger.warn(
-                s"Process still running, stop retry-ing ${logContext}"
-              ) >> Sync[F]
-                .raiseError[Outcome[F]](new TimeoutException(s"Stop polling after ${pollNo} polls"))
+              val stopRetry = doItlogger.warn(s"Process still running, stop retry-ing") >> Sync[F]
+                .raiseError[Outcome[F, Memoized]](
+                  new TimeoutException(s"Stop polling after ${pollNo} polls")
+                )
 
-              val retry = logger.debug(
-                s"Process still running, retry-ing ${logContext}"
-              ) >>
+              val retry = doItlogger.debug(s"Process still running, retry-ing") >>
                 Temporal[F].sleep(pollDelay) >>
                 doIt(
                   startedAt,
@@ -175,29 +181,26 @@ object Mnemosyne {
                 .ifM(stopRetry, retry)
 
             case ProcessStatus.NotStarted | ProcessStatus.Timeout | ProcessStatus.Expired =>
-              logger
-                .debug(
-                  s"Process status is ${ps}, starting now ${logContext}"
-                )
+              doItlogger
+                .debug(s"Process status is ${ps}, starting now")
                 .as {
-                  Outcome.New(
-                    Clock[F].realTimeInstant.flatMap { now =>
-                      repo.completeProcess(id, config.processorId, now, config.ttl).flatTap { _ =>
-                        logger.debug(
-                          s"Process marked as completed ${logContext}"
-                        )
+                  val markAsComplete = (value: Memoized) =>
+                    Clock[F].realTimeInstant
+                      .flatMap { now =>
+                        repo.completeProcess(id, config.processorId, now, config.ttl, value)
                       }
-                    }
-                  )
-                }
-                .widen[Outcome[F]]
+                      .flatTap { _ =>
+                        doItlogger.debug(s"Process marked as completed")
+                      }
 
-            case ProcessStatus.Completed =>
-              logger
-                .debug(
-                  s"Process is duplicated processorId=${config.processorId}, id=${id}, startedAt=${startedAt}"
-                )
-                .as(Outcome.Duplicate())
+                  Outcome.New(markAsComplete)
+                }
+                .widen[Outcome[F, Memoized]]
+
+            case ProcessStatus.Completed(memoized) =>
+              doItlogger
+                .debug(s"Process is duplicated, already completed")
+                .as(Outcome.Duplicate(memoized.asInstanceOf[Memoized]))
           }
 
           for {
@@ -216,9 +219,7 @@ object Mnemosyne {
 
       override def invalidate(id: ID): F[Unit] = {
         repo.invalidateProcess(id, config.processorId).flatTap { _ =>
-          logger.debug(
-            s"Process invalidated processorId=${config.processorId}, id=$id"
-          )
+          logger.debug(s"Process invalidated")
         }
       }
     }

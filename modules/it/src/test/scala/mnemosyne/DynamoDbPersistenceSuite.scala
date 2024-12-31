@@ -47,7 +47,7 @@ class DynamoDbProcessRepoSuite extends CatsEffectSuite {
         id <- a[UUID]
         processorId <- a[UUID]
         now <- Clock[IO].realTimeInstant
-        _ <- resources.processRepoR.startProcessingUpdate(
+        _ <- resources.persistence.startProcessingUpdate(
           id = id,
           processorId = processorId,
           now = now
@@ -64,7 +64,7 @@ class DynamoDbProcessRepoSuite extends CatsEffectSuite {
         id <- a[UUID]
         processorId <- a[UUID]
         now <- Clock[IO].realTimeInstant
-        _ <- resources.processRepoR.startProcessingUpdate(
+        _ <- resources.persistence.startProcessingUpdate(
           id = id,
           processorId = processorId,
           now = now
@@ -110,11 +110,12 @@ class DynamoDbProcessRepoSuite extends CatsEffectSuite {
         id <- a[UUID]
         processorId <- a[UUID]
         now <- Clock[IO].realTimeInstant
-        _ <- resources.processRepoR.completeProcess(
+        _ <- resources.persistence.completeProcess(
           id = id,
           processorId = processorId,
           now = now,
-          ttl = None
+          ttl = None,
+          value = "foo"
         )
         optItem <- resources.getItem(id, processorId)
         item <- IO.fromOption(optItem)(new RuntimeException("Item not found"))
@@ -150,12 +151,12 @@ class DynamoDbProcessRepoSuite extends CatsEffectSuite {
         id <- a[UUID]
         processorId <- a[UUID]
         now <- Clock[IO].realTimeInstant
-        _ <- resources.processRepoR.startProcessingUpdate(
+        _ <- resources.persistence.startProcessingUpdate(
           id = id,
           processorId = processorId,
           now = now
         )
-        _ <- resources.processRepoR.invalidateProcess(
+        _ <- resources.persistence.invalidateProcess(
           id = id,
           processorId = processorId
         )
@@ -169,7 +170,7 @@ class DynamoDbProcessRepoSuite extends CatsEffectSuite {
   case class Resources(
       config: DynamoDbConfig,
       dynamoclient: DynamoDbAsyncClient,
-      processRepoR: Persistence[IO, UUID, UUID]
+      persistence: Persistence[IO, UUID, UUID, String]
   ) {
 
     def getItem(id: UUID, processorId: UUID): IO[Option[AttributeValue]] = {
@@ -211,7 +212,7 @@ class DynamoDbProcessRepoSuite extends CatsEffectSuite {
   } yield Resources(
     config,
     dynamoClient,
-    DynamoDbPersistence[IO, UUID, UUID](
+    DynamoDbPersistence[IO, UUID, UUID, String](
       config,
       dynamoClient
     )

@@ -21,19 +21,20 @@ import scala.concurrent.duration.FiniteDuration
 
 import model.*
 
-trait Persistence[F[_], Id, ProcessorId] {
+trait Persistence[F[_], Id, ProcessorId, A] {
 
   def startProcessingUpdate(
       id: Id,
       processorId: ProcessorId,
       now: Instant
-  ): F[Option[Process[Id, ProcessorId]]]
+  ): F[Option[Process[Id, ProcessorId, A]]]
 
   def completeProcess(
       id: Id,
       processorId: ProcessorId,
       now: Instant,
-      ttl: Option[FiniteDuration]
+      ttl: Option[FiniteDuration],
+      value: A
   ): F[Unit]
 
   def invalidateProcess(

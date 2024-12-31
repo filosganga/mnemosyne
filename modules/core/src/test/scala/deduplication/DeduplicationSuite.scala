@@ -36,17 +36,19 @@ class DeduplicationSuite extends CatsEffectSuite {
 
   def a[A: Arbitrary]: A = Arbitrary.arbitrary[A].sample.get
 
-  class MockPersistence extends Persistence[IO, UUID, UUID] {
-    def startProcessingUpdate(
+  class MockPersistence[A] extends Persistence[IO, UUID, UUID, A] {
+    override def startProcessingUpdate(
         id: UUID,
         processorId: ju.UUID,
         now: Instant
-    ): IO[Option[Process[UUID, UUID]]] = none[Process[UUID, UUID]].pure[IO]
-    def completeProcess(
+    ): IO[Option[Process[UUID, UUID, A]]] = none[Process[UUID, UUID, A]].pure[IO]
+
+    override def completeProcess(
         id: UUID,
         processorId: UUID,
         now: Instant,
-        ttl: Option[FiniteDuration]
+        ttl: Option[FiniteDuration],
+        value: A
     ): IO[Unit] =
       IO.unit
     def invalidateProcess(id: UUID, processorId: UUID): IO[Unit] = IO.unit
@@ -59,13 +61,13 @@ class DeduplicationSuite extends CatsEffectSuite {
     val processId = a[UUID]
     val processorId = a[UUID]
 
-    val deduplication = Mnemosyne[IO, UUID, UUID](
-      new MockPersistence {
+    val mnemosyne = Mnemosyne[IO, UUID, UUID, String](
+      new MockPersistence[String] {
         override def startProcessingUpdate(
             id: UUID,
             processorId: ju.UUID,
             now: Instant
-        ): IO[Option[Process[UUID, UUID]]] = none[Process[UUID, UUID]].pure[IO]
+        ): IO[Option[Process[UUID, UUID, String]]] = none[Process[UUID, UUID, String]].pure[IO]
       },
       Config(
         processorId = processorId,
@@ -76,12 +78,12 @@ class DeduplicationSuite extends CatsEffectSuite {
       Slf4jFactory.create[IO]
     )
 
-    deduplication
-      .flatMap { deduplication =>
-        deduplication.tryStartProcess(processId)
+    mnemosyne
+      .flatMap { mnemosyne =>
+        mnemosyne.tryStartProcess(processId)
       }
       .map { outcome =>
-        assert(outcome.isInstanceOf[Outcome.New[IO]], clue(outcome))
+        assert(outcome.isInstanceOf[Outcome.New[IO, String]], clue(outcome))
       }
 
   }
@@ -93,20 +95,21 @@ class DeduplicationSuite extends CatsEffectSuite {
     val processId = a[UUID]
     val processorId = a[UUID]
 
-    val deduplication = Mnemosyne[IO, UUID, UUID](
-      new MockPersistence {
+    val mnemosyne = Mnemosyne[IO, UUID, UUID, String](
+      new MockPersistence[String] {
         override def startProcessingUpdate(
             id: UUID,
             processorId: ju.UUID,
             now: Instant
-        ): IO[Option[Process[UUID, UUID]]] = {
+        ): IO[Option[Process[UUID, UUID, String]]] = {
           IO.realTimeInstant.map { now =>
             Process(
               id = id,
               processorId = processorId,
               startedAt = now.minusMillis(750),
               completedAt = now.minusMillis(250).some,
-              expiresOn = None
+              expiresOn = None,
+              memoized = "foo".some
             ).some
           }
         }
@@ -120,12 +123,12 @@ class DeduplicationSuite extends CatsEffectSuite {
       Slf4jFactory.create[IO]
     )
 
-    deduplication
-      .flatMap { deduplication =>
-        deduplication.tryStartProcess(processId)
+    mnemosyne
+      .flatMap { mnemosyne =>
+        mnemosyne.tryStartProcess(processId)
       }
       .map { outcome =>
-        assertEquals(outcome, Outcome.Duplicate[IO]())
+        assertEquals(outcome, Outcome.Duplicate[IO, String]("foo"))
       }
   }
 
@@ -136,20 +139,21 @@ class DeduplicationSuite extends CatsEffectSuite {
     val processId = a[UUID]
     val processorId = a[UUID]
 
-    val deduplication = Mnemosyne[IO, UUID, UUID](
-      new MockPersistence {
+    val mnemosyne = Mnemosyne[IO, UUID, UUID, String](
+      new MockPersistence[String] {
         override def startProcessingUpdate(
             id: UUID,
             processorId: ju.UUID,
             now: Instant
-        ): IO[Option[Process[UUID, UUID]]] = {
+        ): IO[Option[Process[UUID, UUID, String]]] = {
           IO.realTimeInstant.map { now =>
             Process(
               id = id,
               processorId = processorId,
               startedAt = now.minusMillis(750),
               completedAt = None,
-              expiresOn = Expiration(now.minusMillis(250)).some
+              expiresOn = Expiration(now.minusMillis(250)).some,
+              memoized = None
             ).some
           }
         }
@@ -163,12 +167,12 @@ class DeduplicationSuite extends CatsEffectSuite {
       Slf4jFactory.create[IO]
     )
 
-    deduplication
-      .flatMap { deduplication =>
-        deduplication.tryStartProcess(processId)
+    mnemosyne
+      .flatMap { mnemosyne =>
+        mnemosyne.tryStartProcess(processId)
       }
       .map { outcome =>
-        assert(outcome.isInstanceOf[Outcome.New[IO]], clue(outcome))
+        assert(outcome.isInstanceOf[Outcome.New[IO, String]], clue(outcome))
       }
   }
 
@@ -179,20 +183,21 @@ class DeduplicationSuite extends CatsEffectSuite {
     val processId = a[UUID]
     val processorId = a[UUID]
 
-    val deduplication = Mnemosyne[IO, UUID, UUID](
-      new MockPersistence {
+    val mnemosyne = Mnemosyne[IO, UUID, UUID, String](
+      new MockPersistence[String] {
         override def startProcessingUpdate(
             id: UUID,
             processorId: ju.UUID,
             now: Instant
-        ): IO[Option[Process[UUID, UUID]]] = {
+        ): IO[Option[Process[UUID, UUID, String]]] = {
           IO.realTimeInstant.map { now =>
             Process(
               id = id,
               processorId = processorId,
               startedAt = now.minusMillis(750),
               completedAt = now.minusMillis(500).some,
-              expiresOn = Expiration(now.minusMillis(250)).some
+              expiresOn = Expiration(now.minusMillis(250)).some,
+              memoized = None
             ).some
           }
         }
@@ -206,12 +211,12 @@ class DeduplicationSuite extends CatsEffectSuite {
       Slf4jFactory.create[IO]
     )
 
-    deduplication
-      .flatMap { deduplication =>
-        deduplication.tryStartProcess(processId)
+    mnemosyne
+      .flatMap { mnemosyne =>
+        mnemosyne.tryStartProcess(processId)
       }
       .map { outcome =>
-        assert(outcome.isInstanceOf[Outcome.New[IO]], clue(outcome))
+        assert(outcome.isInstanceOf[Outcome.New[IO, String]], clue(outcome))
       }
   }
 
@@ -222,20 +227,21 @@ class DeduplicationSuite extends CatsEffectSuite {
     val processId = a[UUID]
     val processorId = a[UUID]
 
-    val deduplication = Mnemosyne[IO, UUID, UUID](
-      new MockPersistence {
+    val mnemosyne = Mnemosyne[IO, UUID, UUID, String](
+      new MockPersistence[String] {
         override def startProcessingUpdate(
             id: UUID,
             processorId: ju.UUID,
             now: Instant
-        ): IO[Option[Process[UUID, UUID]]] = {
+        ): IO[Option[Process[UUID, UUID, String]]] = {
           IO.realTimeInstant.map { now =>
             Process(
               id = id,
               processorId = processorId,
               startedAt = now.minusSeconds(300),
               completedAt = None,
-              expiresOn = None
+              expiresOn = None,
+              memoized = None
             ).some
           }
         }
@@ -249,12 +255,12 @@ class DeduplicationSuite extends CatsEffectSuite {
       Slf4jFactory.create[IO]
     )
 
-    deduplication
-      .flatMap { deduplication =>
-        deduplication.tryStartProcess(processId)
+    mnemosyne
+      .flatMap { mnemosyne =>
+        mnemosyne.tryStartProcess(processId)
       }
       .map { outcome =>
-        assert(outcome.isInstanceOf[Outcome.New[IO]], clue(outcome))
+        assert(outcome.isInstanceOf[Outcome.New[IO, String]], clue(outcome))
       }
   }
 }
