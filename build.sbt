@@ -14,7 +14,7 @@ Global / onChangedBuildSource := ReloadOnSourceChanges
 
 ThisBuild / semanticdbEnabled := true
 ThisBuild / semanticdbVersion := scalafixSemanticdb.revision
-ThisBuild / scalaVersion := "3.6.2"
+ThisBuild / scalaVersion := "3.6.4"
 ThisBuild / crossScalaVersions ++= Seq("3.3.4", "2.13.15")
 
 ThisBuild / versionScheme := Some("early-semver")
