@@ -1,5 +1,5 @@
 val catsVersion = "2.12.0"
-val catsEffectVersion = "3.5.7"
+val catsEffectVersion = "3.6.0"
 val slf4jVersion = "2.0.16"
 val awsSdkVersion = "2.29.43"
 val log4CatsVersion = "2.7.0"
