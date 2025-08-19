@@ -1,0 +1,53 @@
+name: main
+
+on:
+  push:
+    branches:
+      - main
+      - release/*
+
+concurrency:
+  group: main-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: "temurin"
+      - uses: sbt/setup-sbt@v1
+      - name: Restore dependencies
+        id: cache-restore
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.ivy2/cache
+            ~/.sbt
+          key: sbt-${{ hashFiles('**/*.sbt', 'project/build.properties') }}
+      - name: Update dependencies
+        if: steps.cache-restore.outputs.cache-hit != 'true'
+        run: sbt +update
+      - name: Cache dependencies
+        uses: actions/cache/save@v4
+        if: steps.cache-restore.outputs.cache-hit != 'true'
+        with:
+          path: |
+            ~/.ivy2/cache
+            ~/.sbt
+          key: sbt-${{ hashFiles('**/*.sbt', 'project/build.properties') }}
+      - name: build
+        id: build
+        run: sbt "+scalafmtCheckAll;+headerCheckAll;+compile;+Test/test"
+      - uses: scalacenter/sbt-dependency-submission@v3
+      - run: echo $PGP_SECRET | base64 -d | gpg --import
+        env:
+          PGP_SECRET: ${{ secrets.PGP_SECRET }}
+      - run: sbt "+publishSigned"
+        env:
+          SONATYPE_USER: ${{ secrets.SONATYPE_USER }}
+          SONATYPE_PASS: ${{ secrets.SONATYPE_PASS }}

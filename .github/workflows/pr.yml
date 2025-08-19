@@ -1,0 +1,42 @@
+name: pr
+
+on:
+  pull_request:
+
+concurrency:
+  group: pr-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: "temurin"
+      - uses: sbt/setup-sbt@v1
+      - name: Restore dependencies
+        id: cache-restore
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.ivy2/cache
+            ~/.sbt
+          key: sbt-${{ hashFiles('**/*.sbt', 'project/build.properties') }}
+      - name: Update dependencies
+        if: steps.cache-restore.outputs.cache-hit != 'true'
+        run: sbt +update
+      - name: Cache dependencies
+        uses: actions/cache/save@v4
+        if: steps.cache-restore.outputs.cache-hit != 'true'
+        with:
+          path: |
+            ~/.ivy2/cache
+            ~/.sbt
+          key: sbt-${{ hashFiles('**/*.sbt', 'project/build.properties') }}
+      - name: build
+        id: build
+        run: sbt "+scalafmtCheckAll;+headerCheckAll;+compile;+Test/test"
