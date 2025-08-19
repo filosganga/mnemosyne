@@ -42,7 +42,7 @@ class MnemosyneSuite extends CatsEffectSuite {
     val id1 = a[UUID]
     val id2 = a[UUID]
 
-    deduplicationResource[Unit](processorId)
+    mnemosyneResource[Unit](processorId)
       .use { ps =>
         for {
           ref <- Ref[IO].of(0)
@@ -58,7 +58,7 @@ class MnemosyneSuite extends CatsEffectSuite {
     val processorId = a[UUID]
     val id = a[UUID]
 
-    deduplicationResource[Unit](processorId)
+    mnemosyneResource[Unit](processorId)
       .use { ps =>
         for {
           ref <- Ref[IO].of(0)
@@ -74,7 +74,7 @@ class MnemosyneSuite extends CatsEffectSuite {
     val processorId = a[UUID]
     val id = a[UUID]
 
-    deduplicationResource[Unit](processorId, 1.seconds)
+    mnemosyneResource[Unit](processorId, 1.seconds)
       .use { ps =>
         for {
           ref <- Ref[IO].of(0)
@@ -96,7 +96,7 @@ class MnemosyneSuite extends CatsEffectSuite {
     val processorId = a[UUID]
     val id = a[UUID]
 
-    deduplicationResource[Unit](processorId, 1.seconds)
+    mnemosyneResource[Unit](processorId, 1.seconds)
       .use { ps =>
         for {
           ref <- Ref[IO].of(0)
@@ -121,7 +121,7 @@ class MnemosyneSuite extends CatsEffectSuite {
     val id = a[UUID]
 
     val maxProcessingTime = 1.seconds
-    deduplicationResource[Unit](processorId, maxProcessingTime)
+    mnemosyneResource[Unit](processorId, maxProcessingTime)
       .use { ps =>
         for {
           _ <- ps.tryStartProcess(id)
@@ -141,7 +141,7 @@ class MnemosyneSuite extends CatsEffectSuite {
     val maxProcessingTime = 10.seconds
     val maxPollingtime = 1.second
 
-    deduplicationResource[Unit](processorId, maxProcessingTime, maxPollingtime)
+    mnemosyneResource[Unit](processorId, maxProcessingTime, maxPollingtime)
       .use { ps =>
         for {
           _ <- ps.tryStartProcess(id)
@@ -161,7 +161,7 @@ class MnemosyneSuite extends CatsEffectSuite {
 
     val n = 120
 
-    deduplicationResource[Int](processorId, maxProcessingTime = 30.seconds)
+    mnemosyneResource[Int](processorId, maxProcessingTime = 30.seconds)
       .use { d =>
         List
           .fill(math.abs(n))(id)
@@ -174,7 +174,7 @@ class MnemosyneSuite extends CatsEffectSuite {
       }
   }
 
-  def deduplicationResource[A: DynamoDbEncoder: DynamoDbDecoder](
+  def mnemosyneResource[A: DynamoDbEncoder: DynamoDbDecoder](
       processorId: UUID,
       maxProcessingTime: FiniteDuration = 5.seconds,
       maxPollingTime: FiniteDuration = 15.seconds
