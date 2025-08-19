@@ -58,7 +58,7 @@ jobs:
             ~/.sbt
           key: sbt-${{ hashFiles('**/*.sbt', 'project/build.properties') }}
       - run: sbt "+scalafmtCheckAll;+headerCheckAll;+Test/compile;+scalafixAll --check;+test"
-      - uses: alehechka/upload-tartifact@v2
+      - uses: ./.github/actions/upload-tartifact
         with:
           name: targets
           path: "**/target/**"
@@ -87,7 +87,7 @@ jobs:
             ~/.ivy2/cache
             ~/.sbt
           key: sbt-${{ hashFiles('**/*.sbt', 'project/build.properties') }}
-      - uses: alehechka/download-tartifact@v2
+      - uses: ./.github/actions/download-tartifact@v2
         with:
           name: targets
       - uses: scalacenter/sbt-dependency-submission@v3
