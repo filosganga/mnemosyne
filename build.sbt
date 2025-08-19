@@ -9,6 +9,7 @@ val munitCatsEffectVersion = "2.0.0"
 val logBackVersion = "1.5.15"
 val log4j2Version = "2.24.3"
 val lettuceVersion = "6.5.1.RELEASE"
+val circeVersion = "0.14.10"
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
@@ -140,7 +141,10 @@ lazy val core = project
       "org.typelevel" %% "cats-effect-laws" % catsEffectVersion % Test,
       "org.scalameta" %% "munit" % munitVersion % Test,
       "org.scalameta" %% "munit-scalacheck" % munitScalacheckVersion % Test,
-      "org.typelevel" %% "munit-cats-effect" % munitCatsEffectVersion % Test
+      "org.typelevel" %% "munit-cats-effect" % munitCatsEffectVersion % Test,
+      "io.circe" %% "circe-parser" % circeVersion % Test,
+      "io.circe" %% "circe-literal" % circeVersion % Test,
+      "io.circe" %% "circe-core" % circeVersion % Test
     ),
     libraryDependencies ++= loggingOverrideDependencies.map(_ % Test)
   )

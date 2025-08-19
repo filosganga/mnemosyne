@@ -24,13 +24,18 @@ import scala.jdk.CollectionConverters.*
 import cats.effect.*
 import cats.implicits.*
 
-import software.amazon.awssdk.services.dynamodb.model.{AttributeValue, GetItemRequest}
+import software.amazon.awssdk.services.dynamodb.model.{
+  AttributeValue,
+  GetItemRequest,
+  PutItemRequest
+}
 import software.amazon.awssdk.services.dynamodb.{model as _, *}
 
 import munit.*
 import org.scalacheck.Arbitrary
 
 import dynamodb.{DynamoDbConfig, DynamoDbPersistence}
+import dynamodb.DynamoDbPersistence.*
 import TestUtils.*
 
 class DynamoDbProcessRepoSuite extends CatsEffectSuite {
@@ -143,6 +148,66 @@ class DynamoDbProcessRepoSuite extends CatsEffectSuite {
     }
   }
 
+  test("completeProcessWithMemoization should add the record in dynamo with memoized value") {
+
+    resources.use { resources =>
+      for {
+        id <- a[UUID]
+        processorId <- a[UUID]
+        now <- Clock[IO].realTimeInstant
+        _ <- resources.processRepoR.completeProcessWithMemoization(
+          id = id,
+          processorId = processorId,
+          now = now,
+          ttl = None,
+          memoized = "memoized"
+        )
+        maybeItem <- resources.getItem(id, processorId)
+      } yield {
+        val testee = for {
+          item <- maybeItem
+          m <- Option(item.m())
+          memoized <- Option(m.get(DynamoDbPersistence.field.memoized))
+        } yield memoized
+        assertEquals(testee, Some(AttributeValue.builder().s("memoized").build()), clue(maybeItem))
+      }
+    }
+  }
+
+  test("getMemoizedValue should return the memoized value") {
+
+    resources.use { resources =>
+      for {
+        id <- a[UUID]
+        processorId <- a[UUID]
+        _ <- resources.putItem(
+          AttributeValue
+            .builder()
+            .m(
+              Map(
+                DynamoDbPersistence.field.id -> AttributeValue.builder.s(id.toString()).build(),
+                DynamoDbPersistence.field.processorId -> AttributeValue.builder
+                  .s(processorId.toString())
+                  .build(),
+                DynamoDbPersistence.field.memoized -> AttributeValue.builder.s("memoized").build()
+              ).asJava
+            )
+            .build()
+        )
+        maybeValue <- resources.processRepoR.getMemoizedValue[String](
+          id = id,
+          processorId = processorId
+        )
+      } yield {
+        assertEquals(
+          maybeValue,
+          Some("memoized"),
+          clue(maybeValue)
+        )
+      }
+    }
+  }
+
   test("invalidateProcess should remove the record in dynamo") {
 
     resources.use { resources =>
@@ -169,8 +234,27 @@ class DynamoDbProcessRepoSuite extends CatsEffectSuite {
   case class Resources(
       config: DynamoDbConfig,
       dynamoclient: DynamoDbAsyncClient,
-      processRepoR: Persistence[IO, UUID, UUID]
+      processRepoR: Persistence[IO, UUID, UUID, AttributeValue]
   ) {
+
+    def putItem(value: AttributeValue): IO[Unit] = {
+      IO.fromOption(Option(value.m()))(new RuntimeException("The given AttributeValur is not an M"))
+        .flatMap { item =>
+          val request = PutItemRequest
+            .builder()
+            .tableName(config.tableName.value)
+            .item(item)
+            .build()
+
+          IO.fromCompletableFuture(
+            IO.delay(
+              dynamoclient
+                .putItem(request)
+            )
+          ).void
+        }
+
+    }
 
     def getItem(id: UUID, processorId: UUID): IO[Option[AttributeValue]] = {
       val request = GetItemRequest
