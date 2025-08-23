@@ -54,7 +54,7 @@ object DynamoDbEncoder {
     }
 
   implicit val dynamoEncoderForUnit: DynamoDbEncoder[Unit] =
-    DynamoDbEncoder.instance(str => AttributeValue.builder().nul(true).build())
+    DynamoDbEncoder.instance(_ => AttributeValue.builder().nul(true).build())
 
   implicit val dynamoEncoderForBoolean: DynamoDbEncoder[Boolean] =
     DynamoDbEncoder.instance(bool => AttributeValue.builder().bool(bool).build())
