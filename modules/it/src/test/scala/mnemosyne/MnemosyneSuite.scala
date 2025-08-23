@@ -46,8 +46,8 @@ class MnemosyneSuite extends CatsEffectSuite {
       .use { ps =>
         for {
           ref <- Ref[IO].of(0)
-          a <- ps.protect(id1, ref.update(_ + 1))
-          b <- ps.protect(id2, ref.update(_ + 1))
+          _ <- ps.protect(id1, ref.update(_ + 1))
+          _ <- ps.protect(id2, ref.update(_ + 1))
           result <- ref.get
         } yield assertEquals(result, 2)
       }
@@ -62,8 +62,8 @@ class MnemosyneSuite extends CatsEffectSuite {
       .use { ps =>
         for {
           ref <- Ref[IO].of(0)
-          a <- ps.protect(id, ref.update(_ + 1))
-          b <- ps.protect(id, ref.update(_ + 1))
+          _ <- ps.protect(id, ref.update(_ + 1))
+          _ <- ps.protect(id, ref.update(_ + 1))
           result <- ref.get
         } yield assertEquals(result, 1)
       }
