@@ -319,37 +319,35 @@ class MnemosyneSuite extends CatsEffectSuite {
     val processId = a[UUID]
     val processorId = a[UUID]
 
-    Ref[IO].of(none[String]).flatMap { ref =>
-      Mnemosyne[IO, UUID, UUID, String](
-        new MockPersistence[String] {
-          override def startProcessingUpdate(
-              id: UUID,
-              processorId: ju.UUID,
-              now: Instant
-          ): IO[Option[Process[UUID, UUID, String]]] = Process(
-            id,
-            processorId,
-            now.minus(2.days.toJava),
-            Some(now.minus(1.day.toJava)),
-            expiresOn = None,
-            Some("Foo")
-          ).some.pure[IO]
-        },
-        Config(
-          processorId = processorId,
-          maxProcessingTime = 5.minutes,
-          ttl = 30.days.some,
-          pollStrategy = PollStrategy.linear()
-        ),
-        Slf4jFactory.create[IO]
-      ).flatMap { mnemosyne =>
-        mnemosyne.tryStartProcess(processId)
-      }.map {
-        case New(complete) =>
-          fail("Outcome.Duplicate was expected")
-        case Duplicate(value) =>
-          assertEquals(value, "Foo")
-      }
+    Mnemosyne[IO, UUID, UUID, String](
+      new MockPersistence[String] {
+        override def startProcessingUpdate(
+            id: UUID,
+            processorId: ju.UUID,
+            now: Instant
+        ): IO[Option[Process[UUID, UUID, String]]] = Process(
+          id,
+          processorId,
+          now.minus(2.days.toJava),
+          Some(now.minus(1.day.toJava)),
+          expiresOn = None,
+          Some("Foo")
+        ).some.pure[IO]
+      },
+      Config(
+        processorId = processorId,
+        maxProcessingTime = 5.minutes,
+        ttl = 30.days.some,
+        pollStrategy = PollStrategy.linear()
+      ),
+      Slf4jFactory.create[IO]
+    ).flatMap { mnemosyne =>
+      mnemosyne.tryStartProcess(processId)
+    }.map {
+      case New(_) =>
+        fail("Outcome.Duplicate was expected")
+      case Duplicate(value) =>
+        assertEquals(value, "Foo")
     }
   }
 }
