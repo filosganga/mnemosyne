@@ -28,6 +28,7 @@ import org.typelevel.log4cats.slf4j.Slf4jFactory
 import munit.*
 import org.scalacheck.Arbitrary
 
+import com.filippodeluca.mnemosyne.dynamodb.{DynamoDbDecoder, DynamoDbEncoder}
 import TestUtils.*
 import model.*
 import Config.*
@@ -41,15 +42,14 @@ class MnemosyneSuite extends CatsEffectSuite {
     val id1 = a[UUID]
     val id2 = a[UUID]
 
-    deduplicationResource(processorId)
+    mnemosyneResource[Unit](processorId)
       .use { ps =>
         for {
-          a <- ps.protect(id1, IO("nonProcessed"), IO("processed"))
-          b <- ps.protect(id2, IO("nonProcessed"), IO("processed"))
-        } yield {
-          assertEquals(clue(a), "nonProcessed")
-          assertEquals(clue(b), "nonProcessed")
-        }
+          ref <- Ref[IO].of(0)
+          _ <- ps.protect(id1, ref.update(_ + 1))
+          _ <- ps.protect(id2, ref.update(_ + 1))
+          result <- ref.get
+        } yield assertEquals(result, 2)
       }
   }
 
@@ -58,15 +58,14 @@ class MnemosyneSuite extends CatsEffectSuite {
     val processorId = a[UUID]
     val id = a[UUID]
 
-    deduplicationResource(processorId)
+    mnemosyneResource[Unit](processorId)
       .use { ps =>
         for {
-          a <- ps.protect(id, IO("nonProcessed"), IO("processed"))
-          b <- ps.protect(id, IO("nonProcessed"), IO("processed"))
-        } yield {
-          assertEquals(clue(a), "nonProcessed")
-          assertEquals(clue(b), "processed")
-        }
+          ref <- Ref[IO].of(0)
+          _ <- ps.protect(id, ref.update(_ + 1))
+          _ <- ps.protect(id, ref.update(_ + 1))
+          result <- ref.get
+        } yield assertEquals(result, 1)
       }
   }
 
@@ -75,15 +74,15 @@ class MnemosyneSuite extends CatsEffectSuite {
     val processorId = a[UUID]
     val id = a[UUID]
 
-    deduplicationResource(processorId, 1.seconds)
+    mnemosyneResource[Unit](processorId, 1.seconds)
       .use { ps =>
         for {
           ref <- Ref[IO].of(0)
           _ <- ps
-            .protect(id, IO.raiseError[Unit](new RuntimeException("Expected exception")), IO.unit)
+            .protect(id, IO.raiseError[Unit](new RuntimeException("Expected exception")))
             .attempt
-          _ <- ps.protect(id, ref.set(1), IO.unit)
-          _ <- ps.protect(id, ref.set(3), IO.unit)
+          _ <- ps.protect(id, ref.set(1))
+          _ <- ps.protect(id, ref.set(3))
           result <- ref.get
         } yield {
           assertEquals(result, 1)
@@ -97,17 +96,17 @@ class MnemosyneSuite extends CatsEffectSuite {
     val processorId = a[UUID]
     val id = a[UUID]
 
-    deduplicationResource(processorId, 1.seconds)
+    mnemosyneResource[Unit](processorId, 1.seconds)
       .use { ps =>
         for {
           ref <- Ref[IO].of(0)
           _ <- ps
-            .protect(id, IO.raiseError[Unit](new RuntimeException("Expected exception")), IO.unit)
+            .protect(id, IO.raiseError[Unit](new RuntimeException("Expected exception")))
             .attempt
           _ <- List
             .fill(100)(id)
             .parTraverse { _ =>
-              ps.protect(id, ref.update(_ + 1), IO.unit)
+              ps.protect(id, ref.update(_ + 1))
             }
           result <- ref.get
         } yield {
@@ -122,14 +121,14 @@ class MnemosyneSuite extends CatsEffectSuite {
     val id = a[UUID]
 
     val maxProcessingTime = 1.seconds
-    deduplicationResource(processorId, maxProcessingTime)
+    mnemosyneResource[Unit](processorId, maxProcessingTime)
       .use { ps =>
         for {
           _ <- ps.tryStartProcess(id)
           _ <- IO.sleep(maxProcessingTime + 1.second)
           result <- ps.tryStartProcess(id)
         } yield {
-          assert(clue(result).isInstanceOf[Outcome.New[IO]])
+          assert(clue(result).isInstanceOf[Outcome.New[IO, Unit]])
         }
       }
   }
@@ -142,7 +141,7 @@ class MnemosyneSuite extends CatsEffectSuite {
     val maxProcessingTime = 10.seconds
     val maxPollingtime = 1.second
 
-    deduplicationResource(processorId, maxProcessingTime, maxPollingtime)
+    mnemosyneResource[Unit](processorId, maxProcessingTime, maxPollingtime)
       .use { ps =>
         for {
           _ <- ps.tryStartProcess(id)
@@ -162,12 +161,12 @@ class MnemosyneSuite extends CatsEffectSuite {
 
     val n = 120
 
-    deduplicationResource(processorId, maxProcessingTime = 30.seconds)
+    mnemosyneResource[Int](processorId, maxProcessingTime = 30.seconds)
       .use { d =>
         List
           .fill(math.abs(n))(id)
           .parTraverse { i =>
-            d.protect(i, IO(1), IO(0))
+            d.protect(i, IO(1))
           }
           .map { xs =>
             assertEquals(xs.sum, 1)
@@ -175,13 +174,13 @@ class MnemosyneSuite extends CatsEffectSuite {
       }
   }
 
-  def deduplicationResource(
+  def mnemosyneResource[A: DynamoDbEncoder: DynamoDbDecoder](
       processorId: UUID,
       maxProcessingTime: FiniteDuration = 5.seconds,
       maxPollingTime: FiniteDuration = 15.seconds
-  ): Resource[IO, Mnemosyne[IO, UUID, UUID]] =
+  ): Resource[IO, Mnemosyne[IO, UUID, UUID, A]] =
     for {
-      persistence <- persistenceResource[IO]
+      persistence <- persistenceResource[IO, A]
       config = Config(
         processorId = processorId,
         maxProcessingTime = maxProcessingTime,
@@ -189,7 +188,7 @@ class MnemosyneSuite extends CatsEffectSuite {
         pollStrategy = PollStrategy.backoff(maxDuration = maxPollingTime)
       )
       mnemosyne <- Resource.eval(
-        Mnemosyne[IO, UUID, UUID](persistence, config, Slf4jFactory.create[IO])
+        Mnemosyne[IO, UUID, UUID, A](persistence, config, Slf4jFactory.create[IO])
       )
     } yield mnemosyne
 

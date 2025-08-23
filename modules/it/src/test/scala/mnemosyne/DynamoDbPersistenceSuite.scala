@@ -32,6 +32,7 @@ import org.scalacheck.Arbitrary
 
 import dynamodb.{DynamoDbConfig, DynamoDbPersistence}
 import TestUtils.*
+import software.amazon.awssdk.services.dynamodb.model.PutItemRequest
 
 class DynamoDbProcessRepoSuite extends CatsEffectSuite {
 
@@ -47,7 +48,7 @@ class DynamoDbProcessRepoSuite extends CatsEffectSuite {
         id <- a[UUID]
         processorId <- a[UUID]
         now <- Clock[IO].realTimeInstant
-        _ <- resources.processRepoR.startProcessingUpdate(
+        _ <- resources.persistence.startProcessingUpdate(
           id = id,
           processorId = processorId,
           now = now
@@ -64,7 +65,7 @@ class DynamoDbProcessRepoSuite extends CatsEffectSuite {
         id <- a[UUID]
         processorId <- a[UUID]
         now <- Clock[IO].realTimeInstant
-        _ <- resources.processRepoR.startProcessingUpdate(
+        _ <- resources.persistence.startProcessingUpdate(
           id = id,
           processorId = processorId,
           now = now
@@ -103,6 +104,30 @@ class DynamoDbProcessRepoSuite extends CatsEffectSuite {
     }
   }
 
+  test("startProcessingUpdate should read the memoized from dynamo") {
+
+    resources.use { resources =>
+      for {
+        id <- a[UUID]
+        processorId <- a[UUID]
+        now <- Clock[IO].realTimeInstant
+        _ <- resources.putItem(
+          Map(
+            "id" -> AttributeValue.builder().s(id.toString()).build,
+            "processorId" -> AttributeValue.builder().s(processorId.toString()).build,
+            "memoized" -> AttributeValue.builder().s("foo").build
+          )
+        )
+        processOpt <- resources.persistence.startProcessingUpdate(
+          id = id,
+          processorId = processorId,
+          now = now
+        )
+        process <- IO.fromOption(processOpt)(new RuntimeException("process muct be Some"))
+      } yield assertEquals(process.memoized, Some("foo"), clue(process))
+    }
+  }
+
   test("completeProcess should not populate expiresOn when there is no ttl provided") {
 
     resources.use { resources =>
@@ -110,11 +135,12 @@ class DynamoDbProcessRepoSuite extends CatsEffectSuite {
         id <- a[UUID]
         processorId <- a[UUID]
         now <- Clock[IO].realTimeInstant
-        _ <- resources.processRepoR.completeProcess(
+        _ <- resources.persistence.completeProcess(
           id = id,
           processorId = processorId,
           now = now,
-          ttl = None
+          ttl = None,
+          value = "foo"
         )
         optItem <- resources.getItem(id, processorId)
         item <- IO.fromOption(optItem)(new RuntimeException("Item not found"))
@@ -143,6 +169,37 @@ class DynamoDbProcessRepoSuite extends CatsEffectSuite {
     }
   }
 
+  test("completeProcess should populate memoized") {
+
+    resources.use { resources =>
+      for {
+        id <- a[UUID]
+        processorId <- a[UUID]
+        now <- Clock[IO].realTimeInstant
+        _ <- resources.persistence.completeProcess(
+          id = id,
+          processorId = processorId,
+          now = now,
+          ttl = None,
+          value = "foo"
+        )
+        optItem <- resources.getItem(id, processorId)
+        item <- IO.fromOption(optItem)(new RuntimeException("Item not found"))
+      } yield {
+
+        val testeeMemoized = Option(item.m)
+          .flatMap { m =>
+            Option(m.get(DynamoDbPersistence.field.memoized))
+          }
+          .flatMap { id =>
+            Option(id.s())
+          }
+
+        assertEquals(clue(testeeMemoized), "foo".some, clue(item))
+      }
+    }
+  }
+
   test("invalidateProcess should remove the record in dynamo") {
 
     resources.use { resources =>
@@ -150,12 +207,12 @@ class DynamoDbProcessRepoSuite extends CatsEffectSuite {
         id <- a[UUID]
         processorId <- a[UUID]
         now <- Clock[IO].realTimeInstant
-        _ <- resources.processRepoR.startProcessingUpdate(
+        _ <- resources.persistence.startProcessingUpdate(
           id = id,
           processorId = processorId,
           now = now
         )
-        _ <- resources.processRepoR.invalidateProcess(
+        _ <- resources.persistence.invalidateProcess(
           id = id,
           processorId = processorId
         )
@@ -169,8 +226,25 @@ class DynamoDbProcessRepoSuite extends CatsEffectSuite {
   case class Resources(
       config: DynamoDbConfig,
       dynamoclient: DynamoDbAsyncClient,
-      processRepoR: Persistence[IO, UUID, UUID]
+      persistence: Persistence[IO, UUID, UUID, String]
   ) {
+
+    def putItem(item: Map[String, AttributeValue]): IO[Unit] = {
+      val request = PutItemRequest
+        .builder()
+        .tableName(config.tableName.value)
+        .item(item.asJava)
+        .build()
+
+      val response = IO.fromCompletableFuture(
+        IO.delay(
+          dynamoclient
+            .putItem(request)
+        )
+      )
+
+      response.void
+    }
 
     def getItem(id: UUID, processorId: UUID): IO[Option[AttributeValue]] = {
       val request = GetItemRequest
@@ -211,7 +285,7 @@ class DynamoDbProcessRepoSuite extends CatsEffectSuite {
   } yield Resources(
     config,
     dynamoClient,
-    DynamoDbPersistence[IO, UUID, UUID](
+    DynamoDbPersistence[IO, UUID, UUID, String](
       config,
       dynamoClient
     )

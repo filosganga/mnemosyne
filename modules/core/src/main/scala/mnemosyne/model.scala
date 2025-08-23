@@ -23,26 +23,27 @@ import java.time.Instant
   * It should be either New or Duplicate. The New has a markAsComplete member that should be used to
   * mark the process as complete after it has succeeded
   */
-sealed trait Outcome[F[_]]
+sealed trait Outcome[F[_], A]
 object Outcome {
-  case class Duplicate[F[_]]() extends Outcome[F]
-  case class New[F[_]](markAsComplete: F[Unit]) extends Outcome[F]
+  case class New[F[_], A](completeProcess: A => F[Unit]) extends Outcome[F, A]
+  case class Duplicate[F[_], A](value: A) extends Outcome[F, A]
 }
 
 sealed trait ProcessStatus
 object ProcessStatus {
   case object NotStarted extends ProcessStatus
   case object Running extends ProcessStatus
-  case object Completed extends ProcessStatus
+  case class Completed[A](memoized: A) extends ProcessStatus
   case object Timeout extends ProcessStatus
   case object Expired extends ProcessStatus
 }
 
 case class Expiration(instant: Instant)
-case class Process[Id, ProcessorId](
+case class Process[Id, ProcessorId, A](
     id: Id,
     processorId: ProcessorId,
     startedAt: Instant,
     completedAt: Option[Instant],
-    expiresOn: Option[Expiration]
+    expiresOn: Option[Expiration],
+    memoized: Option[A]
 )
