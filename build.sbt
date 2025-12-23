@@ -6,7 +6,7 @@ val log4CatsVersion = "2.7.1"
 val munitVersion = "1.1.1"
 val munitScalacheckVersion = "1.1.0"
 val munitCatsEffectVersion = "2.1.0"
-val logBackVersion = "1.5.18"
+val logBackVersion = "1.5.23"
 val log4j2Version = "2.25.1"
 val lettuceVersion = "6.8.0.RELEASE"
 
