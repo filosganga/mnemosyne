@@ -7,7 +7,7 @@ val munitVersion = "1.1.1"
 val munitScalacheckVersion = "1.1.0"
 val munitCatsEffectVersion = "2.1.0"
 val logBackVersion = "1.5.18"
-val log4j2Version = "2.25.1"
+val log4j2Version = "2.25.5"
 val lettuceVersion = "6.8.0.RELEASE"
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
