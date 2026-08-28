@@ -53,8 +53,13 @@ object DynamoDbEncoder {
       fa.fold(AttributeValue.builder().nul(true).build())(DynamoDbEncoder[A].write)
     }
 
+  // Encoded as an empty M rather than NUL: the Option encoder already uses NUL
+  // for None, so a NUL Unit would make Some(()) and None indistinguishable on
+  // the wire, and Option[Unit] would not survive a round trip.
   implicit val dynamoEncoderForUnit: DynamoDbEncoder[Unit] =
-    DynamoDbEncoder.instance(_ => AttributeValue.builder().nul(true).build())
+    DynamoDbEncoder.instance(_ =>
+      AttributeValue.builder().m(ju.Collections.emptyMap[String, AttributeValue]()).build()
+    )
 
   implicit val dynamoEncoderForBoolean: DynamoDbEncoder[Boolean] =
     DynamoDbEncoder.instance(bool => AttributeValue.builder().bool(bool).build())
