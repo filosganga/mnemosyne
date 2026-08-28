@@ -163,14 +163,20 @@ class MnemosyneSuite extends CatsEffectSuite {
 
     mnemosyneResource[Int](processorId, maxProcessingTime = 30.seconds)
       .use { d =>
-        List
-          .fill(math.abs(n))(id)
-          .parTraverse { i =>
-            d.protect(i, IO(1))
-          }
-          .map { xs =>
-            assertEquals(xs.sum, 1)
-          }
+        for {
+          runs <- Ref[IO].of(0)
+          xs <- List
+            .fill(math.abs(n))(id)
+            .parTraverse { i =>
+              d.protect(i, runs.update(_ + 1).as(1))
+            }
+          executed <- runs.get
+        } yield {
+          // The effect runs once; every caller, including the ones that were
+          // deduplicated, gets the memoized result back.
+          assertEquals(executed, 1)
+          assertEquals(xs, List.fill(math.abs(n))(1))
+        }
       }
   }
 

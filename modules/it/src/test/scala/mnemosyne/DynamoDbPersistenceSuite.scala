@@ -115,6 +115,7 @@ class DynamoDbProcessRepoSuite extends CatsEffectSuite {
           Map(
             "id" -> AttributeValue.builder().s(id.toString()).build,
             "processorId" -> AttributeValue.builder().s(processorId.toString()).build,
+            "startedAt" -> AttributeValue.builder().n(now.toEpochMilli().toString()).build,
             "memoized" -> AttributeValue.builder().s("foo").build
           )
         )
