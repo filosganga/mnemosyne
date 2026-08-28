@@ -48,10 +48,10 @@ trait Mnemosyne[F[_], Id, ProcessorId, Memoized] {
     * ```
     * tryStartProcess(id)
     *   .flatMap {
-    *     case Outcome.New(markAsComplete) =>
-    *       doYourStuff.flatTap(_ => markAsComplete)
-    *     case Outcome.Duplicate() =>
-    *       dontDoYourStuff
+    *     case Outcome.New(completeProcess) =>
+    *       doYourStuff.flatTap(completeProcess)
+    *     case Outcome.Duplicate(value) =>
+    *       value.pure[F]
     *   }
     * ```
     *
